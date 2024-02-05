@@ -1,3 +1,5 @@
+import stripAnsi from "strip-ansi";
+
 function render(lines: string[], cursor: number = 0) {
   let str = "";
   // move the cursor to the far left
@@ -6,12 +8,20 @@ function render(lines: string[], cursor: number = 0) {
   str += "\x1B[J";
 
   // render every line
-  lines.forEach((line) => {
-    str += line + "\n";
+  lines.forEach((line, i) => {
+    str += line;
+    if (i !== lines.length - 1) {
+      str += "\n";
+    }
   });
 
   // Move the cursor back to the top
-  str += "\x1B[" + lines.length + "F";
+  if (lines.length > 1) {
+    str += "\x1B[" + (lines.length - 1) + "F";
+  } else {
+    // move to the far left again
+    str += "\x1B[0G";
+  }
 
   // now move the cursor
   str += "\x1B[" + cursor + "C";
@@ -38,29 +48,28 @@ process.stdin.on("data", (key: string) => {
   });
 });
 
-type Printer = {
+export type DisplayHost = {
   print: () => {
     // the currently typed input, and the selected line.
     prefix: string; // the prefix to show before the input string
     lines: string[]; // the lines to show below the input string
   };
-  inputChanged: (input: string) => void; // called when the input changes
-  lineChanged: (line: number) => void; // called when the line changes
+  inputChanged?: (input: string) => void; // called when the input changes
+  lineChanged?: (line: number) => void; // called when the line changes, with -1 for up, 1 for down
 };
 
-async function startDisplay(printer: Printer): Promise<string | null> {
+export async function startDisplay(host: DisplayHost): Promise<string> {
   let input = "";
   let cursor = 0;
-  let line = 0;
 
-  const printed = printer.print();
+  const printed = host.print();
   render(
     [printed.prefix + input, ...printed.lines],
-    cursor + printed.prefix.length,
+    cursor + stripAnsi(printed.prefix).length,
   );
 
   return new Promise((resolve) => {
-    function done(result: string | null) {
+    function done(result: string) {
       handlers.splice(handlers.indexOf(handler), 1);
       process.stdout.write("\x1B[1000C\x1B[J\n"); // move to the end of the line, clear the screen, and start a new line
       process.stdin.setRawMode(false);
@@ -82,8 +91,7 @@ async function startDisplay(printer: Printer): Promise<string | null> {
       }
       // up/down arrow, modify line number
       else if (char === "\u001b[A" || char === "\u001b[B") {
-        line = Math.max(0, line + (char === "\u001b[A" ? -1 : 1));
-        printer.lineChanged(line);
+        host.lineChanged && host.lineChanged(char === "\u001b[A" ? -1 : 1);
       }
       // backspace, remove char at cursor
       else if (char === "\u007f") {
@@ -102,10 +110,10 @@ async function startDisplay(printer: Printer): Promise<string | null> {
       else if (char === "\u0005") {
         cursor = input.length;
       }
-      // if escape, done, but with null result
+      // if escape, process.exit(0)
       else if (char.startsWith("\u001b")) {
-        done(null);
-        return;
+        console.log("Exiting...");
+        process.exit(0);
       }
       // enter === done
       else if (char === "\r") {
@@ -129,38 +137,15 @@ async function startDisplay(printer: Printer): Promise<string | null> {
       }
 
       if (input !== oldInput) {
-        printer.inputChanged(input);
+        host.inputChanged && host.inputChanged(input);
       }
 
-      const printed = printer.print();
+      const printed = host.print();
       render(
         [printed.prefix + input, ...printed.lines],
-        cursor + printed.prefix.length,
+        cursor + stripAnsi(printed.prefix).length,
       );
     }
     handlers.push(handler);
   });
-}
-
-async function main() {
-  let inputStr = "";
-  let line = 0;
-  const input = await startDisplay({
-    print: () => ({
-      prefix: "Type something: ",
-      lines: ["You typed: " + inputStr, "The current line is: " + line],
-    }),
-    inputChanged: (s: string) => {
-      inputStr = s;
-    },
-    lineChanged: (l: number) => {
-      line = l;
-    },
-  });
-  console.log("Result: " + input);
-  process.exit(0);
-}
-
-if (require.main === module) {
-  main();
 }
