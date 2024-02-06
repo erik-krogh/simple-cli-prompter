@@ -55,7 +55,6 @@ export type DisplayHost = {
     lines: string[]; // the lines to show below the input string
   };
   inputChanged?: (input: string) => void; // called when the input changes
-  lineChanged?: (line: number) => void; // called when the line changes, with -1 for up, 1 for down
   handleKey?: (key: string, display: Display) => boolean; // called when a key is pressed, return true to stop the default action
 };
 
@@ -101,10 +100,6 @@ export function startDisplay(host: DisplayHost): Display {
       // right arrow, cursor right
       else if (char === "\u001b[C") {
         cursor = Math.min(input.length, cursor + 1);
-      }
-      // up/down arrow, modify line number
-      else if (char === "\u001b[A" || char === "\u001b[B") {
-        host.lineChanged && host.lineChanged(char === "\u001b[A" ? -1 : 1);
       }
       // backspace, remove char at cursor
       else if (char === "\u007f") {

@@ -24,7 +24,7 @@ export async function ask(
   }
 
   let input = "";
-  let selectedLine = 0; // TODO: Move line-change code out of display and into here.
+  let selectedLine = 0;
   let startOffset = 0;
   const host: display.DisplayHost = {
     print: () => {
@@ -49,6 +49,32 @@ export async function ask(
           return true; // prevent default action, which is to close the display
         }
       }
+      // up/down arrow, modify line number
+      else if (key === "\u001b[A" || key === "\u001b[B") {
+        selectedLine += key === "\u001b[A" ? -1 : 1;
+        const NUM_ACTIVE_CHOICES = utils.filterAndSortChoices(
+          choices,
+          input,
+        ).length;
+        if (selectedLine < 0) {
+          selectedLine = 0;
+          if (startOffset > 0) {
+            startOffset -= 1;
+          }
+        }
+        if (
+          NUM_ACTIVE_CHOICES !== NUM_OF_SHOWN_CHOICES &&
+          selectedLine >= NUM_ACTIVE_CHOICES
+        ) {
+          selectedLine = NUM_ACTIVE_CHOICES - 1;
+        } else if (selectedLine >= NUM_OF_SHOWN_CHOICES) {
+          selectedLine = NUM_OF_SHOWN_CHOICES - 1;
+          if (startOffset + NUM_OF_SHOWN_CHOICES < choices.length) {
+            startOffset += 1;
+          }
+        }
+        return true;
+      }
       return false;
     },
     inputChanged: (newInput) => {
@@ -68,31 +94,7 @@ export async function ask(
       if (selectedLine >= NUM_ACTIVE_CHOICES) {
         selectedLine = NUM_ACTIVE_CHOICES - 1;
       }
-    },
-    lineChanged: (line) => {
-      const NUM_ACTIVE_CHOICES = utils.filterAndSortChoices(
-        choices,
-        input,
-      ).length;
-      selectedLine += line;
-      if (selectedLine < 0) {
-        selectedLine = 0;
-        if (startOffset > 0) {
-          startOffset -= 1;
-        }
-      }
-      if (
-        NUM_ACTIVE_CHOICES !== NUM_OF_SHOWN_CHOICES &&
-        selectedLine >= NUM_ACTIVE_CHOICES
-      ) {
-        selectedLine = NUM_ACTIVE_CHOICES - 1;
-      } else if (selectedLine >= NUM_OF_SHOWN_CHOICES) {
-        selectedLine = NUM_OF_SHOWN_CHOICES - 1;
-        if (startOffset + NUM_OF_SHOWN_CHOICES < choices.length) {
-          startOffset += 1;
-        }
-      }
-    },
+    }
   };
 
   await (display.startDisplay(host).promise);
