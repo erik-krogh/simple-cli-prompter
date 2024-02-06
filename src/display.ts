@@ -50,9 +50,9 @@ process.stdin.on("data", (key: string) => {
 
 export type DisplayHost = {
   print: () => {
-    // the currently typed input, and the selected line.
     prefix: string; // the prefix to show before the input string
-    lines: string[]; // the lines to show below the input string
+    suffix?: string; // the suffix to show after the input string
+    lines?: string[]; // the lines to show below the input string
   };
   inputChanged?: (input: string) => void; // called when the input changes
   handleKey?: (key: string, display: Display) => boolean; // called when a key is pressed, return true to stop the default action
@@ -61,27 +61,40 @@ export type DisplayHost = {
 export type Display = {
   promise: Promise<string>;
   stop: () => void;
+  update: () => void;
 };
 
 export function startDisplay(host: DisplayHost): Display {
   let input = "";
   let cursor = 0;
+  let stopped = false;
 
-  const printed = host.print();
-  render(
-    [printed.prefix + input, ...printed.lines],
-    cursor + stripAnsi(printed.prefix).length,
-  );
+  function update() {
+    if (stopped) {
+      return;
+    }
+    const printed = host.print();
+    render(
+      [printed.prefix + input + (printed.suffix ?? ""), ...(printed.lines ?? [])],
+      cursor + stripAnsi(printed.prefix).length,
+    );
+  }
+
+  update();
 
   let done: (result: string) => void;
   let display: Display;
 
   const promise = new Promise<string>((resolve) => {
     done = function (result: string) {
+      if (stopped) {
+        return;
+      }
       handlers.splice(handlers.indexOf(handler), 1);
       process.stdout.write("\x1B[1000C\x1B[J\n"); // move to the end of the line, clear the screen, and start a new line
       process.stdin.setRawMode(false);
       process.stdin.pause();
+      stopped = true;
       resolve(result);
     };
     process.stdin.setRawMode(true);
@@ -148,11 +161,7 @@ export function startDisplay(host: DisplayHost): Display {
         host.inputChanged && host.inputChanged(input);
       }
 
-      const printed = host.print();
-      render(
-        [printed.prefix + input, ...printed.lines],
-        cursor + stripAnsi(printed.prefix).length,
-      );
+      update();
     }
     handlers.push(handler);
   });
@@ -160,6 +169,7 @@ export function startDisplay(host: DisplayHost): Display {
   display = {
     promise,
     stop: () => done(""),
+    update
   };
 
   return display;

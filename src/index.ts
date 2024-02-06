@@ -116,10 +116,6 @@ export async function confirm(
   defaultChoice = true,
   secondsTimeout = 0,
 ): Promise<boolean> {
-  if (secondsTimeout !== 0){
-    throw new Error("TODO: Not implemented");
-  }
-
   let answer : boolean | undefined = undefined;
 
   const hideCursorAnsi = "\x1B[?25l";
@@ -129,7 +125,7 @@ export async function confirm(
   const host : display.DisplayHost = {
     print: () => ({
       prefix: text + color.green(defaultChoice + "") + " " + hideCursorAnsi,
-      lines: [],
+      suffix: secondsTimeout > 0 ? color.dim(" defaulting to " + defaultChoice + " in " + secondsTimeout + " seconds") : "",
     }),
     handleKey: (key, display) => {
       if (key === "y" || key === "Y") {
@@ -148,10 +144,26 @@ export async function confirm(
 
   const disp = display.startDisplay(host);
 
+  if (secondsTimeout > 0) {
+    (async () => {
+      while (secondsTimeout > 0 && answer === undefined) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        secondsTimeout--;
+        if (answer === undefined) {
+          disp.update();
+        }
+      }
+      if (answer === undefined) {
+        answer = defaultChoice;
+        disp.stop();
+      }
+    })();
+  }
+
   await disp.promise;
 
-  // move up one line, clear the console, print "text" + selected
-  process.stdout.write("\x1B[1A\x1B[J" + text + color.cyan(answer + "") + "\n");
+  // move up one line, clear the console, print "text" + selected, and show the cursor
+  process.stdout.write("\x1B[1A\x1B[J" + text + color.cyan(answer + "") + "\n\x1B[?25h");
 
   return answer!;
 }
@@ -174,7 +186,7 @@ export function logAbove(str: string) {
 
 // if main
 (async function () {
-  const c = await confirm("Are you sure?", true);
+  const c = await confirm("Are you sure?", false, 5);
   console.log(color.bold.white(c + ""));
   // 15
   console.log(
