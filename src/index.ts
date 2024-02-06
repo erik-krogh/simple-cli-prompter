@@ -118,13 +118,11 @@ export async function confirm(
 ): Promise<boolean> {
   let answer : boolean | undefined = undefined;
 
-  const hideCursorAnsi = "\x1B[?25l";
-
   const text = color.cyan("? ") + color.bold.white(message.trim()) + color.dim(" (Y/n) · ");
 
   const host : display.DisplayHost = {
     print: () => ({
-      prefix: text + color.green(defaultChoice + "") + " " + hideCursorAnsi,
+      prefix: text + color.green(defaultChoice + "") + " " + "\x1B[?25l", // hide cursor
       suffix: secondsTimeout > 0 ? color.dim(" defaulting to " + defaultChoice + " in " + secondsTimeout + " seconds") : "",
     }),
     handleKey: (key, display) => {
