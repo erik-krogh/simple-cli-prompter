@@ -56,6 +56,7 @@ export type DisplayHost = {
   };
   inputChanged?: (input: string) => void; // called when the input changes
   lineChanged?: (line: number) => void; // called when the line changes, with -1 for up, 1 for down
+  handleKey?: (key: string) => boolean; // called when a key is pressed, return true to stop the default action
 };
 
 export async function startDisplay(host: DisplayHost): Promise<string> {
@@ -80,6 +81,10 @@ export async function startDisplay(host: DisplayHost): Promise<string> {
     process.stdin.resume();
     process.stdin.setEncoding("utf8");
     function handler(char: string) {
+      if (host.handleKey && host.handleKey(char)) {
+        return;
+      }
+      
       const oldInput = input;
       // left arrow, cursor left
       if (char === "\u001b[D") {

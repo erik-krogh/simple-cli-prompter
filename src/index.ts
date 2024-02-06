@@ -13,6 +13,9 @@ export async function ask(
   choices?: StringOrChoice[],
 ): Promise<string> {
   text = color.cyan("? ") + color.bold.white(text.trim()) + color.dim(" … ");
+  if (choices && choices.length === 0) {
+    throw new Error("No choices provided");
+  }
   if (!choices) {
     // free form text input
     return await display.startDisplay({
@@ -27,13 +30,26 @@ export async function ask(
     print: () => {
       const lines = utils
         .filterAndSortChoices(choices, input)
-        .slice(startOffset, startOffset + NUM_OF_SHOWN_CHOICES);
+        .slice(startOffset, startOffset + NUM_OF_SHOWN_CHOICES)
+        .map((choice, i) =>
+          utils.renderChoice(choice, i === selectedLine, input),
+        );
+      if (lines.length === 0) {
+        lines.push(color.magenta("No matching choices"));
+      }
       return {
         prefix: text,
-        lines: lines.map((choice, i) =>
-          utils.renderChoice(choice, i === selectedLine, input),
-        ),
+        lines: lines,
       };
+    },
+    handleKey: (key) => {
+      if (key === "\r") {
+        if (utils.filterAndSortChoices(choices, input).length === 0) {
+          process.stdout.write("\x07"); // beep
+          return true; // prevent default action, which is to close the display
+        }
+      }
+      return false;
     },
     inputChanged: (newInput) => {
       input = newInput;
