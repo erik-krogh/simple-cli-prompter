@@ -101,12 +101,12 @@ export async function ask(
     .filterAndSortChoices(choices, input)
     .slice(startOffset, startOffset + NUM_OF_SHOWN_CHOICES)[selectedLine];
 
-  const result = typeof selected === "string" ? selected : selected.name;
+  const shownResult = typeof selected === "string" ? selected : selected.message || selected.name;
 
   // move up one line, clear the console, print "text" + selected
-  process.stdout.write("\x1B[1A\x1B[J" + text + color.cyan(result) + "\n");
+  process.stdout.write("\x1B[1A\x1B[J" + text + color.cyan(shownResult) + "\n");
 
-  return result;
+  return typeof selected === "string" ? selected : selected.name;
 }
 
 export async function confirm(
@@ -196,6 +196,7 @@ export function logAbove(str: string) {
         "fifteen",
       ].map((s) => ({
         name: s,
+        message: s + " (msg)",
         hint: "hint",
       })),
     ),
