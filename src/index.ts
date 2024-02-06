@@ -18,13 +18,13 @@ export async function ask(
   }
   if (!choices) {
     // free form text input
-    return await display.startDisplay({
+    return await (display.startDisplay({
       print: () => ({ prefix: text, lines: [] }),
-    });
+    }).promise);
   }
 
   let input = "";
-  let selectedLine = 0;
+  let selectedLine = 0; // TODO: Move line-change code out of display and into here.
   let startOffset = 0;
   const host: display.DisplayHost = {
     print: () => {
@@ -95,7 +95,7 @@ export async function ask(
     },
   };
 
-  await display.startDisplay(host);
+  await (display.startDisplay(host).promise);
 
   const selected = utils
     .filterAndSortChoices(choices, input)
@@ -114,7 +114,44 @@ export async function confirm(
   defaultChoice = true,
   secondsTimeout = 0,
 ): Promise<boolean> {
-  throw new Error("TODO: Not implemented");
+  if (secondsTimeout !== 0){
+    throw new Error("TODO: Not implemented");
+  }
+
+  let answer : boolean | undefined = undefined;
+
+  const hideCursorAnsi = "\x1B[?25l";
+
+  const text = color.cyan("? ") + color.bold.white(message.trim()) + color.dim(" (Y/n) · ");
+
+  const host : display.DisplayHost = {
+    print: () => ({
+      prefix: text + color.green(defaultChoice + "") + " " + hideCursorAnsi,
+      lines: [],
+    }),
+    handleKey: (key, display) => {
+      if (key === "y" || key === "Y") {
+        answer = true;
+        display.stop();
+      } else if (key === "n" || key === "N") {
+        answer = false;
+        display.stop();
+      } else if (key === "\r") {
+        answer = defaultChoice;
+        display.stop();
+      }
+      return true;
+    },
+  };
+
+  const disp = display.startDisplay(host);
+
+  await disp.promise;
+
+  // move up one line, clear the console, print "text" + selected
+  process.stdout.write("\x1B[1A\x1B[J" + text + color.cyan(answer + "") + "\n");
+
+  return answer!;
 }
 
 export async function file(message: string, ext?: string): Promise<string> {
@@ -135,6 +172,8 @@ export function logAbove(str: string) {
 
 // if main
 (async function () {
+  const c = await confirm("Are you sure?", true);
+  console.log(color.bold.white(c + ""));
   // 15
   console.log(
     await ask(

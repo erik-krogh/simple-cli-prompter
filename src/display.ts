@@ -56,10 +56,15 @@ export type DisplayHost = {
   };
   inputChanged?: (input: string) => void; // called when the input changes
   lineChanged?: (line: number) => void; // called when the line changes, with -1 for up, 1 for down
-  handleKey?: (key: string) => boolean; // called when a key is pressed, return true to stop the default action
+  handleKey?: (key: string, display: Display) => boolean; // called when a key is pressed, return true to stop the default action
 };
 
-export async function startDisplay(host: DisplayHost): Promise<string> {
+export type Display = {
+  promise: Promise<string>;
+  stop: () => void;
+};
+
+export function startDisplay(host: DisplayHost): Display {
   let input = "";
   let cursor = 0;
 
@@ -69,22 +74,25 @@ export async function startDisplay(host: DisplayHost): Promise<string> {
     cursor + stripAnsi(printed.prefix).length,
   );
 
-  return new Promise((resolve) => {
-    function done(result: string) {
+  let done: (result: string) => void;
+  let display: Display;
+
+  const promise = new Promise<string>((resolve) => {
+    done = function (result: string) {
       handlers.splice(handlers.indexOf(handler), 1);
       process.stdout.write("\x1B[1000C\x1B[J\n"); // move to the end of the line, clear the screen, and start a new line
       process.stdin.setRawMode(false);
       process.stdin.pause();
       resolve(result);
-    }
+    };
     process.stdin.setRawMode(true);
     process.stdin.resume();
     process.stdin.setEncoding("utf8");
     function handler(char: string) {
-      if (host.handleKey && host.handleKey(char)) {
+      if (host.handleKey && host.handleKey(char, display)) {
         return;
       }
-      
+
       const oldInput = input;
       // left arrow, cursor left
       if (char === "\u001b[D") {
@@ -153,4 +161,11 @@ export async function startDisplay(host: DisplayHost): Promise<string> {
     }
     handlers.push(handler);
   });
+
+  display = {
+    promise,
+    stop: () => done(""),
+  };
+
+  return display;
 }
