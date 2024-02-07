@@ -33,6 +33,7 @@ const handlers: ((char: string) => void)[] = [];
 process.stdin.on("data", (key: string) => {
   // Ctrl-C is very hardcoded, to make sure it always works
   if (key === "\u0003") {
+    process.stdout.write("\x1B[?25h"); // show the cursor
     process.exit(0);
   }
   handlers.forEach((handler) => {
