@@ -76,102 +76,117 @@ export function startDisplay(host: DisplayHost): Display {
     }
     const printed = host.print();
     render(
-      [printed.prefix + input + (printed.suffix ?? ""), ...(printed.lines ?? [])],
+      [
+        printed.prefix + input + (printed.suffix ?? ""),
+        ...(printed.lines ?? []),
+      ],
       cursor + stripAnsi(printed.prefix).length,
     );
   }
 
   update();
 
-  let done: (result: string) => void;
-  let display: Display;
+  const { resolve, promise } = mkPromise<string>();
 
-  const promise = new Promise<string>((resolve) => {
-    done = function (result: string) {
-      if (stopped) {
-        return;
-      }
-      handlers.splice(handlers.indexOf(handler), 1);
-      process.stdout.write("\x1B[1000C\x1B[J\n"); // move to the end of the line, clear the screen, and start a new line
-      process.stdin.setRawMode(false);
-      process.stdin.pause();
-      stopped = true;
-      resolve(result);
-    };
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
-    process.stdin.setEncoding("utf8");
-    function handler(char: string) {
-      if (host.handleKey && host.handleKey(char, display)) {
-        return;
-      }
-
-      const oldInput = input;
-      // left arrow, cursor left
-      if (char === "\u001b[D") {
-        cursor = Math.max(0, cursor - 1);
-      }
-      // right arrow, cursor right
-      else if (char === "\u001b[C") {
-        cursor = Math.min(input.length, cursor + 1);
-      }
-      // backspace, remove char at cursor
-      else if (char === "\u007f") {
-        input = input.slice(0, cursor - 1) + input.slice(cursor);
-        cursor = Math.max(0, cursor - 1);
-      }
-      // delete, remove char after cursor
-      else if (char === "\u001b[3~") {
-        input = input.slice(0, cursor) + input.slice(cursor + 1);
-      }
-      // ctrl + a, move cursor to start
-      else if (char === "\u0001") {
-        cursor = 0;
-      }
-      // ctrl + e, move cursor to end
-      else if (char === "\u0005") {
-        cursor = input.length;
-      }
-      // if escape, process.exit(0)
-      else if (char.startsWith("\u001b")) {
-        console.log("Exiting...");
-        process.exit(0);
-      }
-      // enter === done
-      else if (char === "\r") {
-        done(input);
-        return;
-      }
-      // plain ascii char, add to input (at cursor position)
-      else if (char.length === 1) {
-        input = input.slice(0, cursor) + char + input.slice(cursor);
-        cursor++;
-      } else {
-        // fail hard, I don't know what to do with this char
-        throw new Error(
-          "Unknown char: " +
-            char +
-            " with code: " +
-            char.charCodeAt(0) +
-            " and length: " +
-            char.length,
-        );
-      }
-
-      if (input !== oldInput) {
-        host.inputChanged && host.inputChanged(input);
-      }
-
-      update();
+  const done: (result: string) => void = function (result: string) {
+    if (stopped) {
+      return;
     }
-    handlers.push(handler);
-  });
-
-  display = {
-    promise,
-    stop: () => done(""),
-    update
+    handlers.splice(handlers.indexOf(handler), 1);
+    process.stdout.write("\x1B[1000C\x1B[J\n"); // move to the end of the line, clear the screen, and start a new line
+    process.stdin.setRawMode(false);
+    process.stdin.pause();
+    stopped = true;
+    resolve(result);
   };
 
+  const display = {
+    promise,
+    stop: () => done(""),
+    update,
+  } satisfies Display;
+
+  process.stdin.setRawMode(true);
+  process.stdin.resume();
+  process.stdin.setEncoding("utf8");
+
+  function handler(char: string) {
+    if (host.handleKey && host.handleKey(char, display)) {
+      update();
+      return;
+    }
+
+    const oldInput = input;
+    // left arrow, cursor left
+    if (char === "\u001b[D") {
+      cursor = Math.max(0, cursor - 1);
+    }
+    // right arrow, cursor right
+    else if (char === "\u001b[C") {
+      cursor = Math.min(input.length, cursor + 1);
+    }
+    // backspace, remove char at cursor
+    else if (char === "\u007f") {
+      input = input.slice(0, cursor - 1) + input.slice(cursor);
+      cursor = Math.max(0, cursor - 1);
+    }
+    // delete, remove char after cursor
+    else if (char === "\u001b[3~") {
+      input = input.slice(0, cursor) + input.slice(cursor + 1);
+    }
+    // ctrl + a, move cursor to start
+    else if (char === "\u0001") {
+      cursor = 0;
+    }
+    // ctrl + e, move cursor to end
+    else if (char === "\u0005") {
+      cursor = input.length;
+    }
+    // if escape, process.exit(0)
+    else if (char.startsWith("\u001b")) {
+      console.log("Exiting...");
+      process.exit(0);
+    }
+    // enter === done
+    else if (char === "\r") {
+      done(input);
+      return;
+    }
+    // plain ascii char, add to input (at cursor position)
+    else if (char.length === 1) {
+      input = input.slice(0, cursor) + char + input.slice(cursor);
+      cursor++;
+    } else {
+      // fail hard, I don't know what to do with this char
+      throw new Error(
+        "Unknown char: " +
+          char +
+          " with code: " +
+          char.charCodeAt(0) +
+          " and length: " +
+          char.length,
+      );
+    }
+
+    if (input !== oldInput) {
+      host.inputChanged && host.inputChanged(input);
+    }
+
+    update();
+  }
+
+  handlers.push(handler);
+
   return display;
+}
+
+function mkPromise<T>(): {
+  promise: Promise<T>;
+  resolve: (value: T) => void;
+} {
+  let resolve: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve: resolve! };
 }

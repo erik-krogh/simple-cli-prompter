@@ -6,6 +6,7 @@ export function renderChoice(
   choice: StringOrChoice,
   selected: boolean = false,
   input?: string,
+  arrowSelected = true,
 ): string {
   let text;
   if (typeof choice === "string") {
@@ -21,10 +22,15 @@ export function renderChoice(
     text = highlightSubsequence(text, input);
   }
 
+  let prefix = "";
+  if (arrowSelected) {
+    prefix = selected ? color.greenBright("\u276f ") : "   ";
+  }
+
   if (!selected) {
-    return "  " + text;
+    return prefix + text;
   } else {
-    return color.greenBright("\u276f ") + color.bold.white(text);
+    return prefix + color.bold.white(text);
   }
 }
 /**
@@ -49,7 +55,7 @@ export function hasSubsequence(str: string, sequence: string): boolean {
 export function filterAndSortChoices(choices: StringOrChoice[], input: string) {
   return choices
     .filter((choice) => {
-      const text = stripAnsi(renderChoice(choice, false));
+      const text = stripAnsi(renderChoice(choice, false, "", false));
       return hasSubsequence(text, input);
     })
     .map((choice) => [choice, getChoicePriority(choice, input)] as const)
