@@ -1,5 +1,5 @@
 import * as display from "./display.js";
-import * as color from "ansi-colors";
+import color from "ansi-colors";
 import * as utils from "./utils.js";
 import * as path from "path";
 
@@ -157,7 +157,7 @@ export async function confirm(
   return answer!;
 }
 
-export async function file(text: string, ext?: string): Promise<string> {
+export async function file(text: string, ext?: string, cwd?: string): Promise<string> {
   text = startText(color.bold.white(text.trim()) + color.dim(" … "));
 
   let input = "";
@@ -168,7 +168,7 @@ export async function file(text: string, ext?: string): Promise<string> {
         input === ""
           ? []
           : utils
-              .makeFileCompletions(input, ext)
+              .makeFileCompletions(input, ext, cwd)
               .map((c) => input + c)
               .map((c) => path.basename(c) + (c.endsWith("/") ? "/" : ""))
               .filter((s) => s)
@@ -185,7 +185,7 @@ export async function file(text: string, ext?: string): Promise<string> {
         if (input === "") {
           return true;
         }
-        const completions = utils.makeFileCompletions(input, ext);
+        const completions = utils.makeFileCompletions(input, ext, cwd);
         if (completions.length === 1) {
           const completion = completions[0];
           display.setInput(input + completion);

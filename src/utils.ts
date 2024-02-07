@@ -24,7 +24,7 @@ export function renderChoice(
 
   let prefix = "";
   if (arrowSelected) {
-    prefix = selected ? color.greenBright("\u276f ") : "   ";
+    prefix = selected ? color.greenBright("\u276f ") : "  ";
   }
 
   if (!selected) {
@@ -168,12 +168,12 @@ import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
 
-export function makeFileCompletions(input: string, ext?: string): string[] {
+export function makeFileCompletions(input: string, ext?: string, cwd?: string): string[] {
   if (input[0] === "~") {
     // add the home dir
     input = path.join(os.homedir(), input.slice(1));
   }
-  const p = path.resolve(process.cwd(), input);
+  const p = path.resolve(cwd ?? process.cwd(), input);
   const parentDir = path.dirname(p);
   if (!fs.existsSync(parentDir)) {
     return [];
@@ -221,4 +221,34 @@ export function makeFileCompletions(input: string, ext?: string): string[] {
     completions = [];
   }
   return completions;
+}
+
+import * as cp from "child_process";
+
+/**
+ * Waits for the given process to terminate, and returns its stdout.
+ * On crash or non-zero exit code, throws an error with the given message.
+ */
+export function waitForProcess(
+  msg: string,
+  proc: cp.ChildProcess,
+): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    let stderr = "";
+    let stdout = "";
+    proc.stdout?.on("data", (data) => {
+      console.log("Data:" + data.toString());
+      stdout += data;
+    });
+    proc.stderr?.on("data", (data) => {
+      stderr += data;
+    });
+    proc.on("close", (code) => {
+      if (code === 0) {
+        resolve(stdout);
+      } else {
+        reject(new Error(msg + " failed with code " + code + "\n" + stderr));
+      }
+    });
+  });
 }

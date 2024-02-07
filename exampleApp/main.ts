@@ -1,0 +1,96 @@
+// XXX: replace with proper import in real application
+import * as prompt from "../src/index.js";
+
+// this is the example app. It's a simple command line tool that lets you clone a git repository and do some basic operations on it.
+import * as tmp from "tmp";
+import { waitForProcess } from "../src/utils.js";
+import * as cp from "child_process";
+import open from "open";
+import * as path from "path";
+
+const popularRepos = [
+  "jquery/jquery",
+  "sindresorhus/awesome",
+  "nodejs/node",
+  "microsoft/TypeScript",
+  "facebook/react",
+  "vuejs/vue",
+  "angular/angular.js",
+  "emberjs/ember.js",
+];
+
+(async function main() {
+  async function selectRepo(): Promise<[string, string]> {
+    const usePossibleRepos = await prompt.confirm("Select among some popular repositories?");
+    const repo = await prompt.ask("Choose a repository", usePossibleRepos ? popularRepos : undefined);
+    // either "http://github.com/org/repo.git" or "org/repo"
+    const reg = /(?:https?:\/\/)?(?:github.com\/)?([^/]+)\/([^/]+)(?:\.git)?/;
+    const match = repo.match(reg);
+    if (!match) {
+      console.log("Invalid repository");
+      return selectRepo();
+    }
+    return [match[1], match[2]];
+  }
+
+  const [org, repo] = await selectRepo();
+
+  console.log(`You chose ${org}/${repo}`);
+
+  const tmpDir = tmp.dirSync({ unsafeCleanup: true });
+
+  // start async, but don't wait for it
+  const clonePromise = waitForProcess(
+    "git clone " + org + "/" + repo,
+    cp.spawn("git", ["clone", `https://github.com/${org}/${repo}.git/`, "."], {
+      cwd: tmpDir.name,
+      stdio: "ignore",
+    }),
+  );
+
+  await (async function doSomething(): Promise<void> {
+    const answer = await prompt.ask("What do you want to do?", [
+      "Checkout a commit",
+      "View a file",
+      "Quit",
+    ]);
+  
+    if (answer === "Quit") {
+      tmpDir.removeCallback();
+      return;
+    }
+  
+    if (answer === "Checkout a commit") {
+      await clonePromise; // now we need to wait for the clone to finish
+  
+      // get all commits
+      const commits = cp.execFileSync("git", ["log", "--oneline", "--format=%H"], {
+        cwd: tmpDir.name,
+        encoding: "utf8",
+      }).split("\n");
+  
+      const commit = await prompt.ask("Choose a commit", commits);
+  
+      cp.execFileSync("git", ["checkout", commit], {
+        cwd: tmpDir.name,
+        stdio: "ignore"
+      });
+      return await doSomething();
+    }
+
+    if (answer === "View a file") {
+      await clonePromise; // now we need to wait for the clone to finish
+      const file = await prompt.file("Select a file", undefined, tmpDir.name);
+      
+      console.log("Selected file: " + file);
+      const confirm = await prompt.confirm("Are you sure you want to open the file?", true, 30)
+      if (!confirm) {
+        return await doSomething();
+      }
+      
+      // open with text editor
+      await open(path.join(tmpDir.name, file));
+      return await doSomething();
+    }
+  })();
+})();
