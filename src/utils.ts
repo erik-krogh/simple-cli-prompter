@@ -139,28 +139,28 @@ function getSubsequenceIndexes(message: string, typed: string): number[] {
 }
 
 export function highlightSubsequence(message: string, typed: string): string {
-  const styleStr = color.cyan.underline("X");
-  const startStyle = styleStr.slice(0, styleStr.indexOf("X"));
-  const endStyle = styleStr.slice(styleStr.indexOf("X") + 1);
+  const indexes = getSubsequenceIndexes(message, typed); // the chars from `message` that are in the subsequence `typed` in `message` and should be highlighted
 
-  const indexes = getSubsequenceIndexes(message, typed);
+  // pairs of start+stop indicating the start and stop of the contiguous subsequences
+  const startStopIndexes = indexes.reduce<[number, number][]>((acc, i) => {
+    if (acc.length === 0) {
+      return [[i, i]];
+    }
+    if (acc[acc.length - 1][1] === i - 1) {
+      acc[acc.length - 1][1] = i;
+      return acc;
+    }
+    return [...acc, [i, i]];
+  }, []);
+
   let result = "";
-  let index = 0;
-  let wasUnderlined = false;
-  for (const i of indexes) {
-    result += message.slice(index, i);
-    if (!wasUnderlined) {
-      result += startStyle; // start cyan underline
-    }
-    result += message[i];
-    wasUnderlined = true;
-    index = i + 1;
-    if (i + 1 >= message.length || !indexes.includes(i + 1)) {
-      result += endStyle; // end cyan underline
-      wasUnderlined = false;
-    }
+  let last = 0;
+  for (const [start, end] of startStopIndexes) {
+    result += message.slice(last, start);
+    result += color.cyan.underline(message.slice(start, end + 1));
+    last = end + 1;
   }
-  result += message.slice(index);
+  result += message.slice(last);
   return result;
 }
 
@@ -168,7 +168,11 @@ import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
 
-export function makeFileCompletions(input: string, ext?: string, cwd?: string): string[] {
+export function makeFileCompletions(
+  input: string,
+  ext?: string,
+  cwd?: string,
+): string[] {
   if (input[0] === "~") {
     // add the home dir
     input = path.join(os.homedir(), input.slice(1));

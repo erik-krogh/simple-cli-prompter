@@ -21,6 +21,11 @@ function printEndText(text: string, answer: string) {
   );
 }
 
+/**
+ * Prompts the user for a string, and if the `choices` parameter is provided, the user can only select one of the provided options.
+ * The selected option is returned as a string.
+ * If using the `Choice` type the `name` field is the value that is returned when the user selects the option, and `message` and `hint` are used to display the option to the user.
+ */
 export async function ask(
   text: string,
   choices?: StringOrChoice[],
@@ -90,6 +95,7 @@ export async function ask(
   return typeof selected === "string" ? selected : selected.name;
 }
 
+/** Prompts the user for a boolean value, and if the `secondsTimeout` parameter is provided the default choice is used after the timeout has passed. */
 export async function confirm(
   message: string,
   defaultChoice = true,
@@ -157,7 +163,15 @@ export async function confirm(
   return answer!;
 }
 
-export async function file(text: string, ext?: string, cwd?: string): Promise<string> {
+/**
+ * Prompts the user for a file path, and if the `ext` parameter is provided the user can only select files with the provided extension.
+ * `cwd` is used as the base directory for the file path. It defaults to the current working directory.
+ */
+export async function file(
+  text: string,
+  ext?: string,
+  cwd?: string,
+): Promise<string> {
   text = startText(color.bold.white(text.trim()) + color.dim(" … "));
 
   let input = "";
@@ -228,6 +242,10 @@ export async function file(text: string, ext?: string, cwd?: string): Promise<st
   return res;
 }
 
+/*
+ * Similar to `ask` but allows the user to select multiple options.
+ * Tapping the `space` key toggles the selection of the currently highlighted option.
+ */
 export async function multiple(
   text: string,
   choices: StringOrChoice[],
@@ -321,6 +339,10 @@ export async function multiple(
 
 let currentDisplay: display.Display | undefined;
 
+/**
+ * Logs a string above current prompting UI.
+ * Simply logging a string using `console.log(...)` will overwrite the prompting UI, so this function has to be used if a user might be actively interacting with a prompt.
+ */
 export function logAbove(str: string) {
   if (currentDisplay?.isStopped()) {
     console.log(str);

@@ -7,9 +7,11 @@ function render(lines: string[], cursor: number = 0) {
   // Clear the terminal from the current cursor position to the end of the screen
   str += "\x1B[J";
 
+  const maxLength = process.stdout.columns || 80;
+
   // render every line
   lines.forEach((line, i) => {
-    str += line;
+    str += limitLengthAnsiAware(line, maxLength);
     if (i !== lines.length - 1) {
       str += "\n";
     }
@@ -27,6 +29,37 @@ function render(lines: string[], cursor: number = 0) {
   str += "\x1B[" + cursor + "C";
 
   process.stdout.write(str);
+}
+
+/**
+ * Ansi aware version of `str.slice(0, len)`.
+ * Returns a string where the ansi-striped length is at most `len`, while making sure to not cut off any ansi escape sequences.
+ */
+function limitLengthAnsiAware(str: string, len: number) {
+  let inEscape = false;
+  let escape = "";
+  let out = "";
+  let visible = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+    if (char === "\x1B") {
+      inEscape = true;
+      escape += char;
+    } else if (inEscape) {
+      escape += char;
+      if (char.match(/[A-Za-z]/)) {
+        inEscape = false;
+        out += escape;
+        escape = "";
+      }
+    } else {
+      visible++;
+      if (visible <= len) {
+        out += char;
+      }
+    }
+  }
+  return out;
 }
 
 const handlers: ((char: string) => void)[] = [];

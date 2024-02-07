@@ -7,6 +7,7 @@ import { waitForProcess } from "../src/utils.js";
 import * as cp from "child_process";
 import open from "open";
 import * as path from "path";
+import * as fs from "fs";
 
 const popularRepos = [
   "jquery/jquery",
@@ -17,12 +18,18 @@ const popularRepos = [
   "vuejs/vue",
   "angular/angular.js",
   "emberjs/ember.js",
+  "github/codeql",
 ];
 
 (async function main() {
   async function selectRepo(): Promise<[string, string]> {
-    const usePossibleRepos = await prompt.confirm("Select among some popular repositories?");
-    const repo = await prompt.ask("Choose a repository", usePossibleRepos ? popularRepos : undefined);
+    const usePossibleRepos = await prompt.confirm(
+      "Select among some popular repositories?",
+    );
+    const repo = await prompt.ask(
+      "Choose a repository",
+      usePossibleRepos ? popularRepos : undefined,
+    );
     // either "http://github.com/org/repo.git" or "org/repo"
     const reg = /(?:https?:\/\/)?(?:github.com\/)?([^/]+)\/([^/]+)(?:\.git)?/;
     const match = repo.match(reg);
@@ -54,26 +61,47 @@ const popularRepos = [
       "View a file",
       "Quit",
     ]);
-  
+
     if (answer === "Quit") {
       tmpDir.removeCallback();
-      return;
+      process.exit(0);
     }
-  
+
     if (answer === "Checkout a commit") {
       await clonePromise; // now we need to wait for the clone to finish
-  
+
+      const commitsTmpFile = tmp.fileSync({ postfix: ".txt" });
+
       // get all commits
-      const commits = cp.execFileSync("git", ["log", "--oneline", "--format=%H"], {
-        cwd: tmpDir.name,
-        encoding: "utf8",
-      }).split("\n");
-  
-      const commit = await prompt.ask("Choose a commit", commits);
-  
+      cp.execSync(
+        'git log --oneline --format="%H %s" > ' + commitsTmpFile.name,
+        {
+          cwd: tmpDir.name,
+          encoding: "utf8",
+        },
+      );
+
+      const commits = fs
+        .readFileSync(commitsTmpFile.name, "utf8")
+        .split("\n")
+        .filter((c) => c);
+
+      const commit = await prompt.ask(
+        "Choose a commit",
+        commits.map((c) => {
+          const hash = c.slice(0, c.indexOf(" "));
+          const msg = c.slice(c.indexOf(" ") + 1);
+          return {
+            message: msg,
+            name: hash,
+            hint: hash,
+          };
+        }),
+      );
+
       cp.execFileSync("git", ["checkout", commit], {
         cwd: tmpDir.name,
-        stdio: "ignore"
+        stdio: "ignore",
       });
       return await doSomething();
     }
@@ -81,13 +109,17 @@ const popularRepos = [
     if (answer === "View a file") {
       await clonePromise; // now we need to wait for the clone to finish
       const file = await prompt.file("Select a file", undefined, tmpDir.name);
-      
+
       console.log("Selected file: " + file);
-      const confirm = await prompt.confirm("Are you sure you want to open the file?", true, 30)
+      const confirm = await prompt.confirm(
+        "Are you sure you want to open the file?",
+        true,
+        30,
+      );
       if (!confirm) {
         return await doSomething();
       }
-      
+
       // open with text editor
       await open(path.join(tmpDir.name, file));
       return await doSomething();
