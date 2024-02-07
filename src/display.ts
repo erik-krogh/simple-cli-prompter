@@ -37,8 +37,8 @@ process.stdin.on("data", (key: string) => {
     process.exit(0);
   }
   handlers.forEach((handler) => {
-    // if plain ascii chars, handle one by one
-    if (/^[\x20-\x7E]+$/.test(key)) {
+    // if ordinary keyboard char, extended ascii, special char, unicode, etc. handle one by one
+    if (/^[\x20-\x7E\u00A0-\uFFFF]+$/.test(key)) {
       for (let i = 0; i < key.length; i++) {
         handler(key[i]);
       }
@@ -64,6 +64,7 @@ export type Display = {
   stop: () => void;
   update: () => void;
   setInput: (input: string) => void;
+  isStopped: () => boolean;
 };
 
 export function startDisplay(host: DisplayHost): Display {
@@ -111,6 +112,7 @@ export function startDisplay(host: DisplayHost): Display {
       host.inputChanged?.(input);
       update();
     },
+    isStopped: () => stopped,
   } satisfies Display;
 
   process.stdin.setRawMode(true);

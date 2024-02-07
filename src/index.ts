@@ -31,9 +31,9 @@ export async function ask(
   }
   if (!choices) {
     // free form text input
-    return await display.startDisplay({
+    return (currentDisplay = display.startDisplay({
       print: () => ({ prefix: text }),
-    }).promise;
+    })).promise;
   }
 
   let input = "";
@@ -76,7 +76,7 @@ export async function ask(
     },
   };
 
-  await display.startDisplay(host).promise;
+  await (currentDisplay = display.startDisplay(host)).promise;
 
   const selected = utils
     .filterAndSortChoices(choices, input)
@@ -132,6 +132,7 @@ export async function confirm(
   };
 
   const disp = display.startDisplay(host);
+  currentDisplay = disp;
 
   if (secondsTimeout > 0) {
     (async () => {
@@ -161,7 +162,7 @@ export async function file(text: string, ext?: string): Promise<string> {
 
   let input = "";
 
-  const disp = display.startDisplay({
+  const host = {
     print: () => {
       const completionsHints =
         input === ""
@@ -215,7 +216,10 @@ export async function file(text: string, ext?: string): Promise<string> {
     inputChanged: (newInput) => {
       input = newInput;
     },
-  });
+  } satisfies display.DisplayHost;
+
+  const disp = display.startDisplay(host);
+  currentDisplay = disp;
 
   const res = await disp.promise;
 
@@ -301,7 +305,7 @@ export async function multiple(
     },
   };
 
-  await display.startDisplay(host).promise;
+  await (currentDisplay = display.startDisplay(host)).promise;
 
   const selectedChoices = choices.filter((c) => selected.has(c)); // preserves the original order
 
@@ -315,8 +319,17 @@ export async function multiple(
   return selectedChoices.map((c) => (typeof c === "string" ? c : c.name));
 }
 
+let currentDisplay: display.Display | undefined;
+
 export function logAbove(str: string) {
-  throw new Error("TODO: Not implemented");
+  if (currentDisplay?.isStopped()) {
+    console.log(str);
+  } else {
+    // move left to the start of the line, and clear all content below
+    process.stdout.write("\x1b[1G\x1b[J");
+    process.stdout.write(str + "\n");
+    currentDisplay?.update();
+  }
 }
 
 function printChoices(
@@ -388,38 +401,3 @@ function handleKeyUpDown(
   }
   return { selectedLine, startOffset };
 }
-
-// if main
-(async function () {
-  const f = await file("Some file", ".ts");
-  console.log(color.bold.white(f));
-  //const c = await confirm("Are you sure?", false, 5);
-  //console.log(color.bold.white(c + ""));
-  // 15
-  console.log(
-    await multiple(
-      "Select one of these?",
-      [
-        "one",
-        "two",
-        "three",
-        "four",
-        "five",
-        "six",
-        "seven",
-        "eight",
-        "nine",
-        "ten",
-        "eleven",
-        "twelve",
-        "thirteen",
-        "fourteen",
-        "fifteen",
-      ].map((s) => ({
-        name: s,
-        message: s + " (msg)",
-        hint: "hint",
-      })),
-    ),
-  );
-})();
