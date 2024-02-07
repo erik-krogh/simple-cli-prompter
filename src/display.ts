@@ -63,6 +63,7 @@ export type Display = {
   promise: Promise<string>;
   stop: () => void;
   update: () => void;
+  setInput: (input: string) => void;
 };
 
 export function startDisplay(host: DisplayHost): Display {
@@ -104,6 +105,12 @@ export function startDisplay(host: DisplayHost): Display {
     promise,
     stop: () => done(""),
     update,
+    setInput: (newInput: string) => {
+      input = newInput;
+      cursor = input.length;
+      host.inputChanged?.(input);
+      update();
+    },
   } satisfies Display;
 
   process.stdin.setRawMode(true);
@@ -142,10 +149,9 @@ export function startDisplay(host: DisplayHost): Display {
     else if (char === "\u0005") {
       cursor = input.length;
     }
-    // if escape, process.exit(0)
+    // if unknown escape sequence, ignore
     else if (char.startsWith("\u001b")) {
-      console.log("Exiting...");
-      process.exit(0);
+      // ignore
     }
     // enter === done
     else if (char === "\r") {

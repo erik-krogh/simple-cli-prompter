@@ -1,6 +1,7 @@
 import * as display from "./display.js";
 import * as color from "ansi-colors";
 import * as utils from "./utils.js";
+import * as path from "path";
 
 const NUM_OF_SHOWN_CHOICES = 10;
 
@@ -31,7 +32,7 @@ export async function ask(
   if (!choices) {
     // free form text input
     return await display.startDisplay({
-      print: () => ({ prefix: text, lines: [] }),
+      print: () => ({ prefix: text }),
     }).promise;
   }
 
@@ -155,8 +156,72 @@ export async function confirm(
   return answer!;
 }
 
-export async function file(message: string, ext?: string): Promise<string> {
-  throw new Error("TODO: Not implemented");
+export async function file(text: string, ext?: string): Promise<string> {
+  text = startText(color.bold.white(text.trim()) + color.dim(" … "));
+
+  let input = "";
+
+  const disp = display.startDisplay({
+    print: () => {
+      const completionsHints =
+        input === ""
+          ? []
+          : utils
+              .makeFileCompletions(input, ext)
+              .map((c) => input + c)
+              .map((c) => path.basename(c) + (c.endsWith("/") ? "/" : ""))
+              .filter((s) => s)
+              .slice(0, NUM_OF_SHOWN_CHOICES);
+      return {
+        prefix: text,
+        suffix: color.dim(" You can use tab completion"),
+        lines: completionsHints,
+      };
+    },
+    handleKey: (key, display) => {
+      // tab -> trigger completion
+      if (key === "\t") {
+        if (input === "") {
+          return true;
+        }
+        const completions = utils.makeFileCompletions(input, ext);
+        if (completions.length === 1) {
+          const completion = completions[0];
+          display.setInput(input + completion);
+        } else if (completions.length > 1) {
+          let commonStr = "";
+          let i = 0;
+
+          const minLen = Math.min(...completions.map((c) => c.length));
+
+          outer: while (i < minLen) {
+            const char = completions[0][i];
+            for (const completion of completions.slice(1)) {
+              if (completion.length <= i || completion[i] !== char) {
+                break outer;
+              }
+            }
+            commonStr += char;
+            i++;
+          }
+          if (commonStr.length > 0) {
+            display.setInput(input + commonStr);
+          }
+        }
+        return true;
+      }
+      return false;
+    },
+    inputChanged: (newInput) => {
+      input = newInput;
+    },
+  });
+
+  const res = await disp.promise;
+
+  printEndText(text, res);
+
+  return res;
 }
 
 export async function multiple(
@@ -326,6 +391,8 @@ function handleKeyUpDown(
 
 // if main
 (async function () {
+  const f = await file("Some file", ".ts");
+  console.log(color.bold.white(f));
   //const c = await confirm("Are you sure?", false, 5);
   //console.log(color.bold.white(c + ""));
   // 15

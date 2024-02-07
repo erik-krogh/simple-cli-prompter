@@ -163,3 +163,62 @@ export function highlightSubsequence(message: string, typed: string): string {
   result += message.slice(index);
   return result;
 }
+
+import * as path from "path";
+import * as os from "os";
+import * as fs from "fs";
+
+export function makeFileCompletions(input: string, ext?: string): string[] {
+  if (input[0] === "~") {
+    // add the home dir
+    input = path.join(os.homedir(), input.slice(1));
+  }
+  const p = path.resolve(process.cwd(), input);
+  const parentDir = path.dirname(p);
+  if (!fs.existsSync(parentDir)) {
+    return [];
+  }
+
+  if (fs.existsSync(p) && fs.lstatSync(p).isDirectory()) {
+    return fs
+      .readdirSync(p)
+      .filter((f) => {
+        return (
+          (typeof ext === "undefined" || f.endsWith(ext) || !f.includes(".")) &&
+          !f.startsWith(".")
+        );
+      })
+      .map((f) => {
+        if (fs.lstatSync(path.join(p, f)).isDirectory()) {
+          return f + "/";
+        } else {
+          return f;
+        }
+      });
+  }
+
+  const file = path.basename(p);
+  let completions: string[];
+  try {
+    completions = fs
+      .readdirSync(parentDir)
+      .filter((f) => {
+        return (
+          f.startsWith(file) &&
+          (typeof ext === "undefined" || f.endsWith(ext) || !f.includes("."))
+        );
+      })
+      .map((f) => {
+        if (fs.lstatSync(path.join(parentDir, f)).isDirectory()) {
+          return f.slice(file.length) + "/";
+        } else {
+          return f.slice(file.length);
+        }
+      })
+      .filter((f) => !(f === "/" && input.endsWith("/")));
+  } catch (ignored) {
+    // access denied or similar
+    completions = [];
+  }
+  return completions;
+}
