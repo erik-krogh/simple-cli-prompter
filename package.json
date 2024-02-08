@@ -2,7 +2,7 @@
   "name": "simple-cli-prompter",
   "version": "0.0.1",
   "description": "Simple CLI prompter",
-  "main": "dist/index.js",
+  "main": "src/index.ts",
   "type": "module",
   "scripts": {
     "build": "npx tsc && (cd exampleApp && npx tsc)",

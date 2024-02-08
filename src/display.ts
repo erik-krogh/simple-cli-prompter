@@ -1,7 +1,14 @@
 import stripAnsi from "strip-ansi";
 
+// how many lines down we've moved the cursor. Used to move back up before rendering.
+let linesDown: number = 0;
+
 function render(lines: string[], cursor: number = 0) {
   let str = "";
+  // if we have moved down some lines, move back up
+  if (linesDown > 0) {
+    str += "\x1B[" + linesDown + "A";
+  }
   // move the cursor to the far left
   str += "\x1B[0G";
   // Clear the terminal from the current cursor position to the end of the screen
@@ -11,7 +18,7 @@ function render(lines: string[], cursor: number = 0) {
 
   // render every line
   lines.forEach((line, i) => {
-    str += limitLengthAnsiAware(line, maxLength);
+    str += limitLengthAnsiAware(line, 0, maxLength);
     if (i !== lines.length - 1) {
       str += "\n";
     }
@@ -26,20 +33,29 @@ function render(lines: string[], cursor: number = 0) {
   }
 
   // now move the cursor
-  str += "\x1B[" + cursor + "C";
+  if (cursor > maxLength) {
+    linesDown = Math.floor(cursor / maxLength);
+    str += "\x1B[" + (cursor % maxLength) + "C";
+    str += "\x1B[" + linesDown + "B";
+  } else {
+    linesDown = 0;
+    str += "\x1B[" + cursor + "C";
+  }
 
   process.stdout.write(str);
 }
 
 /**
- * Ansi aware version of `str.slice(0, len)`.
- * Returns a string where the ansi-striped length is at most `len`, while making sure to not cut off any ansi escape sequences.
+ * Ansi aware version of `str.slice(start, end)`.
+ * Returns a string where the ansi-striped length is between `start` and `end`, while making sure to not cut off any ansi escape sequences and properly ending all ansi codes.
  */
-function limitLengthAnsiAware(str: string, len: number) {
+function limitLengthAnsiAware(str: string, start: number, end: number) {
   let inEscape = false;
   let escape = "";
   let out = "";
   let visible = 0;
+  let escapeSequences = ""; // To store all escape sequences encountered
+
   for (let i = 0; i < str.length; i++) {
     const char = str[i];
     if (char === "\x1B") {
@@ -49,16 +65,23 @@ function limitLengthAnsiAware(str: string, len: number) {
       escape += char;
       if (char.match(/[A-Za-z]/)) {
         inEscape = false;
-        out += escape;
+        escapeSequences += escape; // Add the escape sequence to the collection
+        if (visible >= start && visible < end) {
+          out += escape;
+        }
         escape = "";
       }
     } else {
-      visible++;
-      if (visible <= len) {
+      if (visible >= start && visible < end) {
         out += char;
       }
+      visible++;
     }
   }
+
+  // Append all escape sequences to ensure formatting is reset or maintained
+  out += escapeSequences;
+
   return out;
 }
 
@@ -100,6 +123,14 @@ export type Display = {
   isStopped: () => boolean;
 };
 
+// make sure `update()` is called when the terminal is resized
+let currentUpdate: (() => void) | undefined;
+process.stdout.on("resize", () => {
+  if (currentUpdate) {
+    currentUpdate();
+  }
+});
+
 export function startDisplay(host: DisplayHost): Display {
   let input = "";
   let cursor = 0;
@@ -110,14 +141,37 @@ export function startDisplay(host: DisplayHost): Display {
       return;
     }
     const printed = host.print();
+
+    // The first line is special, that's the one that has the cursor.
+    // We show the hint, only if there is space on the first line (cutting of the last part of the hint if necessary).
+    // If the line is still too long, we split it across multiple lines (ansi code aware).
+    let firstLine = printed.prefix + input + (printed.suffix ?? "");
+    const maxLength = process.stdout.columns || 80;
+    if (stripAnsi(printed.prefix + input).length > maxLength) {
+      firstLine = printed.prefix + input;
+    } else {
+      firstLine = limitLengthAnsiAware(printed.prefix + input + (printed.suffix ?? ""), 0, maxLength)
+    }
+    const firstLines: string[] = [];
+    if (stripAnsi(firstLine).length < maxLength) {
+      firstLines.push(firstLine);
+    } else {
+      // split into multiple lines
+      const numLines = Math.ceil(stripAnsi(firstLine).length / maxLength);
+      for (let i = 0; i < numLines; i++) {
+        firstLines.push(
+          limitLengthAnsiAware(firstLine, i * maxLength, (i + 1) * maxLength),
+        );
+      }
+    }
+
     render(
-      [
-        printed.prefix + input + (printed.suffix ?? ""),
-        ...(printed.lines ?? []),
-      ],
+      [...firstLines, ...(printed.lines ?? [])],
       cursor + stripAnsi(printed.prefix).length,
     );
   }
+
+  currentUpdate = update;
 
   update();
 
@@ -128,6 +182,11 @@ export function startDisplay(host: DisplayHost): Display {
       return;
     }
     handlers.splice(handlers.indexOf(handler), 1);
+    // it's the callers responsibility to print the result. We reset the display and clear the prompting UI.
+    if (linesDown > 0) {
+      // move up again
+      process.stdout.write("\x1B[" + linesDown + "A");
+    }
     process.stdout.write("\x1B[1000C\x1B[J\n"); // move to the end of the line, clear the screen, and start a new line
     process.stdin.setRawMode(false);
     process.stdin.pause();

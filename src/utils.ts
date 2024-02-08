@@ -30,7 +30,7 @@ export function renderChoice(
   if (!selected) {
     return prefix + text;
   } else {
-    return prefix + color.bold.white(text);
+    return prefix + color.cyan.underline(text);
   }
 }
 /**
@@ -157,7 +157,7 @@ export function highlightSubsequence(message: string, typed: string): string {
   let last = 0;
   for (const [start, end] of startStopIndexes) {
     result += message.slice(last, start);
-    result += color.cyan.underline(message.slice(start, end + 1));
+    result += color.cyan.bold.underline(message.slice(start, end + 1));
     last = end + 1;
   }
   result += message.slice(last);

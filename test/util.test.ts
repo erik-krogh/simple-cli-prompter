@@ -1,18 +1,16 @@
 import { expect } from "chai";
-import dedent from "dedent";
 import color from "ansi-colors";
 
 import * as search from "../src/utils.js";
+
+const highlight = (str: string) => color.cyan.bold.underline(str);
 
 describe("counting non-comment lines", function () {
   it("should should correctly highlight sections of string", function () {
     let longStr = "foo this is a text bar";
     let input = "foobar";
 
-    let expected =
-      color.cyan.underline("foo") +
-      " this is a text " +
-      color.cyan.underline("bar");
+    let expected = highlight("foo") + " this is a text " + highlight("bar");
     let actual = search.highlightSubsequence(longStr, input);
 
     console.log("Expected: ", expected);
@@ -26,11 +24,7 @@ describe("counting non-comment lines", function () {
     const input = "this text";
 
     const expected =
-      "foo " +
-      color.cyan.underline("this ") +
-      "is a " +
-      color.cyan.underline("text") +
-      " bar";
+      "foo " + highlight("this ") + "is a " + highlight("text") + " bar";
     const actual = search.highlightSubsequence(longStr, input);
 
     console.log("Expected: ", expected);
@@ -43,8 +37,7 @@ describe("counting non-comment lines", function () {
     const longStr = "seven";
     const input = "ee";
 
-    const expected =
-      "s" + color.cyan.underline("e") + "v" + color.cyan.underline("e") + "n";
+    const expected = "s" + highlight("e") + "v" + highlight("e") + "n";
     const actual = search.highlightSubsequence(longStr, input);
 
     console.log("Expected: ", expected);

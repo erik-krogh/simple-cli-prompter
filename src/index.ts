@@ -36,9 +36,13 @@ export async function ask(
   }
   if (!choices) {
     // free form text input
-    return (currentDisplay = display.startDisplay({
+    const answer = await (currentDisplay = display.startDisplay({
       print: () => ({ prefix: text }),
     })).promise;
+
+    printEndText(text, answer);
+
+    return answer;
   }
 
   let input = "";
@@ -103,10 +107,9 @@ export async function confirm(
 ): Promise<boolean> {
   let answer: boolean | undefined = undefined;
 
-  const text =
-    color.cyan("? ") +
-    color.bold.white(message.trim()) +
-    color.dim(" (Y/n) · ");
+  const text = startText(
+    color.bold.white(message.trim()) + color.dim(" (Y/n) · "),
+  );
 
   const host: display.DisplayHost = {
     print: () => ({
@@ -329,9 +332,11 @@ export async function multiple(
 
   printEndText(
     text,
-    selectedChoices
-      .map((c) => (typeof c === "string" ? c : c.message || c.name))
-      .join(", "),
+    selectedChoices.length === 0
+      ? color.italic("(none)")
+      : selectedChoices
+          .map((c) => (typeof c === "string" ? c : c.message || c.name))
+          .join(", "),
   );
 
   return selectedChoices.map((c) => (typeof c === "string" ? c : c.name));
@@ -417,7 +422,7 @@ function handleKeyUpDown(
     selectedLine = NUM_ACTIVE_CHOICES - 1;
   } else if (selectedLine >= NUM_OF_SHOWN_CHOICES) {
     selectedLine = NUM_OF_SHOWN_CHOICES - 1;
-    if (startOffset + NUM_OF_SHOWN_CHOICES < choices.length) {
+    if (startOffset + NUM_OF_SHOWN_CHOICES < NUM_ACTIVE_CHOICES) {
       startOffset += 1;
     }
   }
