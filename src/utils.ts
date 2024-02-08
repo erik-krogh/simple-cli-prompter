@@ -119,23 +119,28 @@ function getSubsequenceIndexes(message: string, typed: string): number[] {
   message = message.toLowerCase();
   typed = typed.toLowerCase();
 
-  const result: number[] = [];
-  let index = -1;
-  outer: while (typed.length > 0) {
-    for (let l = typed.length - 1; l >= 0; l--) {
-      const i = message.indexOf(typed.slice(0, l + 1), index + 1);
-      if (i !== -1) {
-        index = i;
-        typed = typed.slice(l + 1);
-        for (let res = index; res <= index + l; res++) {
-          result.push(res);
-        }
-        continue outer;
-      }
+  let messageIndex = 0;
+  let typedIndex = 0;
+  const indexes = [];
+
+  // Iterate over each character in `typed`
+  while (messageIndex < message.length && typedIndex < typed.length) {
+    if (message[messageIndex] === typed[typedIndex]) {
+      // If characters match, store the index from `message` and move both pointers
+      indexes.push(messageIndex);
+      typedIndex++;
     }
-    break;
+    // Always move the message pointer to search for the next matching character
+    messageIndex++;
   }
-  return result;
+
+  // Check if all characters from `typed` were found in `message` in sequence
+  if (typedIndex < typed.length) {
+    // Not all characters were found, return an empty array
+    return [];
+  }
+
+  return indexes;
 }
 
 export function highlightSubsequence(message: string, typed: string): string {

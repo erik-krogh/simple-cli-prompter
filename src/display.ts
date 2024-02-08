@@ -150,7 +150,11 @@ export function startDisplay(host: DisplayHost): Display {
     if (stripAnsi(printed.prefix + input).length > maxLength) {
       firstLine = printed.prefix + input;
     } else {
-      firstLine = limitLengthAnsiAware(printed.prefix + input + (printed.suffix ?? ""), 0, maxLength)
+      firstLine = limitLengthAnsiAware(
+        printed.prefix + input + (printed.suffix ?? ""),
+        0,
+        maxLength,
+      );
     }
     const firstLines: string[] = [];
     if (stripAnsi(firstLine).length < maxLength) {

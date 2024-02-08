@@ -45,4 +45,17 @@ describe("counting non-comment lines", function () {
 
     expect(actual).to.equal(expected);
   });
+
+  it("should work with repeated chars", function () {
+    const longStr = "Missing import";
+    const input = "misi";
+
+    const expected = highlight("Mis") + "s" + highlight("i") + "ng import";
+    const actual = search.highlightSubsequence(longStr, input);
+
+    console.log("Expected: ", expected);
+    console.log("Actual: ", actual);
+
+    expect(actual).to.equal(expected);
+  });
 });
