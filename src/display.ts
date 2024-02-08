@@ -223,53 +223,12 @@ export function startDisplay(host: DisplayHost): Display {
 
     const oldInput = input;
     // left arrow, cursor left
-    if (char === "\u001b[D") {
-      cursor = Math.max(0, cursor - 1);
-    }
-    // right arrow, cursor right
-    else if (char === "\u001b[C") {
-      cursor = Math.min(input.length, cursor + 1);
-    }
-    // backspace, remove char at cursor
-    else if (char === "\u007f") {
-      input = input.slice(0, cursor - 1) + input.slice(cursor);
-      cursor = Math.max(0, cursor - 1);
-    }
-    // delete, remove char after cursor
-    else if (char === "\u001b[3~") {
-      input = input.slice(0, cursor) + input.slice(cursor + 1);
-    }
-    // ctrl + a, move cursor to start
-    else if (char === "\u0001") {
-      cursor = 0;
-    }
-    // ctrl + e, move cursor to end
-    else if (char === "\u0005") {
-      cursor = input.length;
-    }
-    // if unknown escape sequence, ignore
-    else if (char.startsWith("\u001b")) {
-      // ignore
-    }
-    // enter === done
-    else if (char === "\r") {
-      done(input);
+    let skip: boolean | undefined = false;
+    ({ cursor, input, skip } = handleKeyPress(char, cursor, input, done));
+
+    if (skip) {
+      update();
       return;
-    }
-    // plain ascii char, add to input (at cursor position)
-    else if (char.length === 1) {
-      input = input.slice(0, cursor) + char + input.slice(cursor);
-      cursor++;
-    } else {
-      // fail hard, I don't know what to do with this char
-      throw new Error(
-        "Unknown char: " +
-          char +
-          " with code: " +
-          char.charCodeAt(0) +
-          " and length: " +
-          char.length,
-      );
     }
 
     if (input !== oldInput) {
@@ -282,6 +241,84 @@ export function startDisplay(host: DisplayHost): Display {
   handlers.push(handler);
 
   return display;
+}
+
+function handleKeyPress(
+  char: string,
+  cursor: number,
+  input: string,
+  done: (result: string) => void,
+): { cursor: number; input: string; skip?: boolean } {
+  if (char === "\u001b[D") {
+    cursor = Math.max(0, cursor - 1);
+  }
+
+  // right arrow, cursor right
+  else if (char === "\u001b[C") {
+    cursor = Math.min(input.length, cursor + 1);
+  }
+
+  // backspace, remove char at cursor
+  else if (char === "\u007f") {
+    input = input.slice(0, cursor - 1) + input.slice(cursor);
+    cursor = Math.max(0, cursor - 1);
+  }
+
+  // delete, remove char after cursor
+  else if (char === "\u001b[3~") {
+    input = input.slice(0, cursor) + input.slice(cursor + 1);
+  }
+
+  // ctrl + a, move cursor to start
+  else if (char === "\u0001") {
+    cursor = 0;
+  }
+
+  // ctrl + e, move cursor to end
+  else if (char === "\u0005") {
+    cursor = input.length;
+  }
+
+  // ctrl + u, delete entire line
+  else if (char === "\u0015") {
+    input = "";
+    cursor = 0;
+  }
+
+  // ctrl + k, delete from cursor to end
+  else if (char === "\u000b") {
+    input = input.slice(0, cursor);
+  }
+
+  // option + right arrow or ctrl + right arrow, move cursor to end of word, or end of string if no match
+  else if (char === "\u001b\u001b[C" || char === "\u001b[1;5C") {
+    const match = input.slice(cursor).match(/\s/);
+    cursor += match ? match.index! + 1 : input.length - cursor;
+  }
+
+  // option + left arrow or ctrl + left arrow, move cursor to start of word
+  else if (char === "\u001b\u001b[D" || char === "\u001b[1;5D") {
+    const match = input.slice(0, cursor).match(/\S+\s*$/);
+    cursor = match ? cursor - match[0].length : 0;
+  }
+
+  // if unknown escape sequence, ignore
+  else if (char.startsWith("\u001b")) {
+    // ignore
+  }
+
+  // enter === done
+  else if (char === "\r") {
+    done(input);
+    return { cursor, input, skip: true };
+  }
+
+  // plain ascii chars, add to input (at cursor position)
+  else {
+    input = input.slice(0, cursor) + char + input.slice(cursor);
+    cursor += char.length;
+  }
+  return { cursor, input };
 }
 
 function mkPromise<T>(): {
