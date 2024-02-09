@@ -1,13 +1,13 @@
 import { expect } from "chai";
 import color from "ansi-colors";
 
-import * as search from "../src/utils.js";
+import * as utils from "../src/utils.js";
 
 const highlight = (str: string) => color.cyan.bold.underline(str);
 
 describe("highlighting", function () {
   function test(str: string, input: string, expected: string) {
-    const actual = search.highlightSubsequence(str, input);
+    const actual = utils.highlightSubsequence(str, input);
     console.log("Expected: ", expected);
     console.log("Actual: ", actual);
     expect(actual).to.equal(expected);
@@ -61,5 +61,48 @@ describe("highlighting", function () {
     input = "miT";
     expected = highlight("mi") + "crosoft/" + highlight("T") + "ypeScript";
     test(longStr, input, expected);
+  });
+
+  it("should find consequtive matches when possible", function () {
+    const longStr = "microsoft/typescript";
+
+    let input = "script";
+    let expected = "microsoft/type" + highlight("script");
+    test(longStr, input, expected);
+
+    input = "oftscript";
+    expected = "micros" + highlight("oft") + "/type" + highlight("script");
+    test(longStr, input, expected);
+  });
+
+  function mkRandomHex(len: number) {
+    return Array.from({ length: len }, () =>
+      Math.floor(Math.random() * 16).toString(16),
+    ).join("");
+  }
+
+  it("should perform well", function () {
+    const startInit = Date.now();
+
+    // fill a list of 100.000 strings that 100 char long random hex strings
+    const list = Array.from({ length: 100_000 }, () => mkRandomHex(100));
+    // input as a random 10 char hex string
+    const input = mkRandomHex(10);
+
+    const endInit = Date.now();
+    console.log("Init time: ", endInit - startInit, "ms"); // 672ms on my machine
+
+    // time the search
+    const startSort = Date.now();
+
+    const sorted = utils.filterAndSortChoices(list, input);
+    console.log("Sorted: ", sorted.length);
+
+    const endSort = Date.now();
+
+    console.log("Time: ", endSort - startSort, "ms"); // 158ms on my machine, and 245 on GitHub Actions with ubuntu-latest
+
+    // fail hard if it took more than a second
+    expect(endSort - startSort).to.be.lessThan(1000);
   });
 });
