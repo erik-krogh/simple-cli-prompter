@@ -36,9 +36,15 @@ export function renderChoice(
 /**
  * Holds if `substr` is a subsequence of `str`.
  */
-export function hasSubsequence(str: string, sequence: string): boolean {
-  str = str.toLowerCase();
-  sequence = sequence.toLowerCase();
+export function hasSubsequence(
+  str: string,
+  sequence: string,
+  caseNormalize: boolean = true,
+): boolean {
+  if (caseNormalize) {
+    str = str.toLowerCase();
+    sequence = sequence.toLowerCase();
+  }
   let i = 0;
   let j = 0;
   while (i < str.length && j < sequence.length) {
@@ -95,68 +101,60 @@ function getSubSequenceWeight(str: string, sequence: string): number {
   if (indexes.length === 0) {
     return 0;
   }
-  let sum = 0;
-  let index = -2;
-  let currentLength = 0;
-  for (const i of indexes) {
-    if (i == index + 1) {
-      currentLength++;
-    } else {
-      sum += currentLength * currentLength;
-      currentLength = 1;
-    }
-    index = i;
-  }
-
-  return sum + currentLength * currentLength;
+  return indexes.reduce((acc, [start, end]) => acc + (end - start + 1) ** 2, 0);
 }
 
 /**
  * Gets the indexes of the chars from `str` in the subsequence `substr` in `str`.
  * Does a greedy search for the longest contiguous subsequences.
+ * The result are pairs of start/end indexes for the subsequences.
  */
-function getSubsequenceIndexes(message: string, typed: string): number[] {
-  message = message.toLowerCase();
-  typed = typed.toLowerCase();
+function getSubsequenceIndexes(
+  message: string,
+  typed: string,
+): [number, number][] {
+  // checking if the typed string is a subsequence of the message when we don't normalize the case
+  if (hasSubsequence(message, typed, false)) {
+    // there is a subsequence match without normalizing the case, so we don't need to case normalize
+  } else {
+    // there is not, so we need to case normalize
+    message = message.toLowerCase();
+    typed = typed.toLowerCase();
+  }
 
-  let messageIndex = 0;
-  let typedIndex = 0;
-  const indexes = [];
+  // at this point we know that `typed` is a subsequence of `message`.
+  const result: [number, number][] = [];
+  let i = 0;
+  let j = 0;
+  let startIndex: number = -1; // To indicate the start of a subsequence
 
-  // Iterate over each character in `typed`
-  while (messageIndex < message.length && typedIndex < typed.length) {
-    if (message[messageIndex] === typed[typedIndex]) {
-      // If characters match, store the index from `message` and move both pointers
-      indexes.push(messageIndex);
-      typedIndex++;
+  while (i < message.length && j < typed.length) {
+    if (message[i] === typed[j]) {
+      if (startIndex === -1) {
+        startIndex = i; // Start of a new subsequence
+      }
+      i++;
+      j++;
+    } else {
+      if (startIndex !== -1) {
+        // End of the current subsequence
+        result.push([startIndex, i - 1]);
+        startIndex = -1; // Reset startIndex for the next subsequence
+      }
+      i++;
     }
-    // Always move the message pointer to search for the next matching character
-    messageIndex++;
   }
 
-  // Check if all characters from `typed` were found in `message` in sequence
-  if (typedIndex < typed.length) {
-    // Not all characters were found, return an empty array
-    return [];
+  // Check if the last subsequence extends to the end of 'typed'
+  if (startIndex !== -1 && j === typed.length) {
+    result.push([startIndex, i - 1]);
   }
 
-  return indexes;
+  return result;
 }
 
 export function highlightSubsequence(message: string, typed: string): string {
-  const indexes = getSubsequenceIndexes(message, typed); // the chars from `message` that are in the subsequence `typed` in `message` and should be highlighted
-
-  // pairs of start+stop indicating the start and stop of the contiguous subsequences
-  const startStopIndexes = indexes.reduce<[number, number][]>((acc, i) => {
-    if (acc.length === 0) {
-      return [[i, i]];
-    }
-    if (acc[acc.length - 1][1] === i - 1) {
-      acc[acc.length - 1][1] = i;
-      return acc;
-    }
-    return [...acc, [i, i]];
-  }, []);
+  const startStopIndexes = getSubsequenceIndexes(message, typed); // the chars from `message` that are in the subsequence `typed` in `message` and should be highlighted
 
   let result = "";
   let last = 0;
