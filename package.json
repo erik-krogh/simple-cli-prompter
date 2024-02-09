@@ -2,10 +2,10 @@
   "name": "simple-cli-prompter",
   "version": "0.0.1",
   "description": "Simple CLI prompter",
-  "main": "src/index.ts",
+  "main": "dist/src/index.js",
   "type": "module",
   "scripts": {
-    "build": "npx tsc && (cd exampleApp && npx tsc)",
+    "build": "npx tsc",
     "lint": "npx eslint src",
     "format": "npx prettier -w .",
     "format-check": "npx prettier -c .",
