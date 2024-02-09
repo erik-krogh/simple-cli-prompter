@@ -14,3 +14,8 @@ import * as cp from "child_process";
  * On crash or non-zero exit code, throws an error with the given message.
  */
 export declare function waitForProcess(msg: string, proc: cp.ChildProcess): Promise<string>;
+/**
+ * Ansi aware version of `str.slice(start, end)`.
+ * Returns a string where the ansi-striped length is between `start` and `end`, while making sure to not cut off any ansi escape sequences and properly ending all ansi codes.
+ */
+export declare function ansiAwareSlice(str: string, start: number, end: number): string;

@@ -1,4 +1,5 @@
 import stripAnsi from "strip-ansi";
+import { ansiAwareSlice } from "./utils";
 // how many lines down we've moved the cursor. Used to move back up before rendering.
 let linesDown = 0;
 function render(lines, cursor = 0) {
@@ -14,7 +15,7 @@ function render(lines, cursor = 0) {
     const maxLength = process.stdout.columns || 80;
     // render every line
     lines.forEach((line, i) => {
-        str += limitLengthAnsiAware(line, 0, maxLength);
+        str += ansiAwareSlice(line, 0, maxLength);
         if (i !== lines.length - 1) {
             str += "\n";
         }
@@ -38,44 +39,6 @@ function render(lines, cursor = 0) {
         str += "\x1B[" + cursor + "C";
     }
     process.stdout.write(str);
-}
-/**
- * Ansi aware version of `str.slice(start, end)`.
- * Returns a string where the ansi-striped length is between `start` and `end`, while making sure to not cut off any ansi escape sequences and properly ending all ansi codes.
- */
-function limitLengthAnsiAware(str, start, end) {
-    let inEscape = false;
-    let escape = "";
-    let out = "";
-    let visible = 0;
-    let escapeSequences = ""; // To store all escape sequences encountered
-    for (let i = 0; i < str.length; i++) {
-        const char = str[i];
-        if (char === "\x1B") {
-            inEscape = true;
-            escape += char;
-        }
-        else if (inEscape) {
-            escape += char;
-            if (char.match(/[A-Za-z]/)) {
-                inEscape = false;
-                escapeSequences += escape; // Add the escape sequence to the collection
-                if (visible >= start && visible < end) {
-                    out += escape;
-                }
-                escape = "";
-            }
-        }
-        else {
-            if (visible >= start && visible < end) {
-                out += char;
-            }
-            visible++;
-        }
-    }
-    // Append all escape sequences to ensure formatting is reset or maintained
-    out += escapeSequences;
-    return out;
 }
 const handlers = [];
 process.stdin.on("data", (key) => {
@@ -122,7 +85,7 @@ export function startDisplay(host) {
             firstLine = printed.prefix + input;
         }
         else {
-            firstLine = limitLengthAnsiAware(printed.prefix + input + (printed.suffix ?? ""), 0, maxLength);
+            firstLine = ansiAwareSlice(printed.prefix + input + (printed.suffix ?? ""), 0, maxLength);
         }
         const firstLines = [];
         if (stripAnsi(firstLine).length < maxLength) {
@@ -132,7 +95,7 @@ export function startDisplay(host) {
             // split into multiple lines
             const numLines = Math.ceil(stripAnsi(firstLine).length / maxLength);
             for (let i = 0; i < numLines; i++) {
-                firstLines.push(limitLengthAnsiAware(firstLine, i * maxLength, (i + 1) * maxLength));
+                firstLines.push(ansiAwareSlice(firstLine, i * maxLength, (i + 1) * maxLength));
             }
         }
         render([...firstLines, ...(printed.lines ?? [])], cursor + stripAnsi(printed.prefix).length);

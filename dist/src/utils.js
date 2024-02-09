@@ -2,17 +2,25 @@ import stripAnsi from "strip-ansi";
 import color from "ansi-colors";
 export function renderChoice(choice, selected = false, input, arrowSelected = true) {
     let text;
+    let hintStart = -1;
     if (typeof choice === "string") {
         text = choice;
     }
     else {
         text = choice.message || choice.name;
         if (choice.hint) {
-            text += " " + color.dim(choice.hint);
+            hintStart = text.length;
+            text += " " + choice.hint;
         }
     }
     if (input) {
         text = highlightSubsequence(text, input);
+    }
+    // I have to apply the dim after the highlighting, otherwise the formatting gets messed up
+    if (hintStart !== -1) {
+        text =
+            ansiAwareSlice(text, 0, hintStart + 1) +
+                color.dim(ansiAwareSlice(text, hintStart + 1, text.length));
     }
     let prefix = "";
     if (arrowSelected) {
@@ -138,11 +146,11 @@ export function highlightSubsequence(message, typed) {
     let result = "";
     let last = 0;
     for (const [start, end] of startStopIndexes) {
-        result += message.slice(last, start);
-        result += color.cyan.bold.underline(message.slice(start, end + 1));
+        result += ansiAwareSlice(message, last, start); //message.slice(last, start);
+        result += color.cyan.bold.underline(ansiAwareSlice(message, start, end + 1)); //message.slice(start, end + 1));
         last = end + 1;
     }
-    result += message.slice(last);
+    result += ansiAwareSlice(message, last, message.length); //message.slice(last);
     return result;
 }
 import * as path from "path";
@@ -223,5 +231,43 @@ export function waitForProcess(msg, proc) {
             }
         });
     });
+}
+/**
+ * Ansi aware version of `str.slice(start, end)`.
+ * Returns a string where the ansi-striped length is between `start` and `end`, while making sure to not cut off any ansi escape sequences and properly ending all ansi codes.
+ */
+export function ansiAwareSlice(str, start, end) {
+    let inEscape = false;
+    let escape = "";
+    let out = "";
+    let visible = 0;
+    let escapeSequences = ""; // To store all escape sequences encountered
+    for (let i = 0; i < str.length; i++) {
+        const char = str[i];
+        if (char === "\x1B") {
+            inEscape = true;
+            escape += char;
+        }
+        else if (inEscape) {
+            escape += char;
+            if (char.match(/[A-Za-z]/)) {
+                inEscape = false;
+                escapeSequences += escape; // Add the escape sequence to the collection
+                if (visible >= start && visible < end) {
+                    out += escape;
+                }
+                escape = "";
+            }
+        }
+        else {
+            if (visible >= start && visible < end) {
+                out += char;
+            }
+            visible++;
+        }
+    }
+    // Append all escape sequences to ensure formatting is reset or maintained
+    out += escapeSequences;
+    return out;
 }
 //# sourceMappingURL=utils.js.map
