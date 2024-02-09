@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "Simple CLI prompter",
   "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "type": "module",
   "scripts": {
     "build": "npx tsc",

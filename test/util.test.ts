@@ -105,4 +105,16 @@ describe("highlighting", function () {
     // fail hard if it took more than a second
     expect(endSort - startSort).to.be.lessThan(1000);
   });
+
+  it("should handle hints", function () {
+    const choices = {
+      name: "Use a different config file",
+      hint: "currently using /Users/erik/dev/dca/dca-config.yml",
+    };
+
+    let input = "ev";
+
+    const sorted = utils.filterAndSortChoices([choices], input);
+    console.log("Sorted: ", sorted);
+  });
 });

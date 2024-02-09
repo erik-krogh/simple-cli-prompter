@@ -70,18 +70,17 @@ export function filterAndSortChoices(choices: StringOrChoice[], input: string) {
 }
 
 function getChoicePriority(choice: StringOrChoice, input: string): number {
-  const message =
-    typeof choice === "string" ? choice : choice.message || choice.name || "";
+  const text = stripAnsi(renderChoice(choice, false, "", false));
   const hint =
     typeof choice === "string" ? "" : choice?.hint?.toLowerCase() || "";
-  if (message.indexOf(input) !== -1) {
+  if (text.indexOf(input) !== -1) {
     // first the exact matches
     // sorted by where the match is (earlier matches are better)
-    return 1 + message.indexOf(input) / 1000;
-  } else if (getSubSequenceWeight(message, input)) {
+    return 1 + text.indexOf(input) / 1000;
+  } else if (getSubSequenceWeight(text, input)) {
     // then the matches that are a subsequence of the typed string
     // sorted by the length of the longest contiguous subsequence of the typed string in the message
-    return 2 + (message.length - getSubSequenceWeight(message, input)) / 1000;
+    return 2 + (text.length - getSubSequenceWeight(text, input)) / 1000;
   } else if (hint && getSubSequenceWeight(hint, input)) {
     // same, but for hints
     return 3 + (hint.length - getSubSequenceWeight(hint, input)) / 1000;
