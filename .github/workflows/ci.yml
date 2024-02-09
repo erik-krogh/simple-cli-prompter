@@ -1,0 +1,36 @@
+name: Continuous integration
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+jobs:
+  ci-checks:
+    name: Run CI
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18, 20, 21]
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run checks
+        run: npm run checks
+
+      - name: Run compilation, and check dist/ is up to date
+        run: |
+          npm run build
+          git diff --exit-code
+        env:
+          CI: true
