@@ -100,7 +100,7 @@ describe("highlighting", function () {
 
     const endSort = Date.now();
 
-    console.log("Time: ", endSort - startSort, "ms"); // 158ms on my machine
+    console.log("Time: ", endSort - startSort, "ms"); // 158ms on my machine, and 245 on GitHub Actions with ubuntu-latest
 
     // fail hard if it took more than a second
     expect(endSort - startSort).to.be.lessThan(1000);
