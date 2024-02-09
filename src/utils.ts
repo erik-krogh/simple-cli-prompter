@@ -122,32 +122,34 @@ function getSubsequenceIndexes(
     typed = typed.toLowerCase();
   }
 
-  // at this point we know that `typed` is a subsequence of `message`.
-  const result: [number, number][] = [];
-  let i = 0;
-  let j = 0;
-  let startIndex: number = -1; // To indicate the start of a subsequence
-
-  while (i < message.length && j < typed.length) {
-    if (message[i] === typed[j]) {
-      if (startIndex === -1) {
-        startIndex = i; // Start of a new subsequence
-      }
-      i++;
-      j++;
-    } else {
-      if (startIndex !== -1) {
-        // End of the current subsequence
-        result.push([startIndex, i - 1]);
-        startIndex = -1; // Reset startIndex for the next subsequence
-      }
-      i++;
-    }
+  if (!hasSubsequence(message, typed, false)) {
+    throw new Error(
+      `The string "${typed}" is not a subsequence of "${message}"`,
+    );
   }
 
-  // Check if the last subsequence extends to the end of 'typed'
-  if (startIndex !== -1 && j === typed.length) {
-    result.push([startIndex, i - 1]);
+  // a greedy algorithm that finds the longest contiguous subsequences
+  const result: [number, number][] = [];
+  let startOffset = 0;
+  while (typed.length > 0) {
+    for (let useLength = typed.length; useLength > 0; useLength--) {
+      const subseq = typed.slice(0, useLength);
+      const index = message.indexOf(subseq, startOffset);
+      if (index === -1) {
+        continue;
+      }
+      if (index !== -1) {
+        // check that the remainder is still a subsequence
+        const remainderTyped = typed.slice(useLength);
+        const remainderMsg = message.slice(index + useLength);
+        if (hasSubsequence(remainderMsg, remainderTyped, false)) {
+          startOffset = index + useLength;
+          typed = remainderTyped;
+          result.push([index, index + useLength - 1]);
+          break;
+        }
+      }
+    }
   }
 
   return result;
