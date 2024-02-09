@@ -1,9 +1,5 @@
-// XXX: replace with proper import in real application
-import * as prompt from "../src/index.js";
-
-// this is the example app. It's a simple command line tool that lets you clone a git repository and do some basic operations on it.
+import * as prompt from "prompter";
 import * as tmp from "tmp";
-import { waitForProcess } from "../src/utils.js";
 import * as cp from "child_process";
 import open from "open";
 import * as path from "path";
@@ -126,3 +122,32 @@ const popularRepos = [
     }
   })();
 })();
+
+// TODO: Move or something.
+/**
+ * Waits for the given process to terminate, and returns its stdout.
+ * On crash or non-zero exit code, throws an error with the given message.
+ */
+export function waitForProcess(
+  msg: string,
+  proc: cp.ChildProcess,
+): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    let stderr = "";
+    let stdout = "";
+    proc.stdout?.on("data", (data) => {
+      console.log("Data:" + data.toString());
+      stdout += data;
+    });
+    proc.stderr?.on("data", (data) => {
+      stderr += data;
+    });
+    proc.on("close", (code) => {
+      if (code === 0) {
+        resolve(stdout);
+      } else {
+        reject(new Error(msg + " failed with code " + code + "\n" + stderr));
+      }
+    });
+  });
+}
