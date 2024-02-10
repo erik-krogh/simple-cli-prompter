@@ -70,8 +70,12 @@ export function hasSubsequence(
 export function filterAndSortChoices(choices: StringOrChoice[], input: string) {
   return choices
     .filter((choice) => {
-      const text = stripAnsi(renderChoice(choice, false, "", false));
-      return hasSubsequence(text, input);
+      return hasSubsequence(
+        typeof choice === "string"
+          ? choice
+          : (choice.message ?? choice.name) + (choice.hint ?? ""),
+        input,
+      );
     })
     .map((choice) => [choice, getChoicePriority(choice, input)] as const)
     .sort((a, b) => a[1] - b[1])
@@ -86,13 +90,19 @@ function getChoicePriority(choice: StringOrChoice, input: string): number {
     // first the exact matches
     // sorted by where the match is (earlier matches are better)
     return 1 + text.indexOf(input) / 1000;
-  } else if (getSubSequenceWeight(text, input)) {
+  }
+
+  const textWeight = getSubSequenceWeight(text, input);
+  if (textWeight) {
     // then the matches that are a subsequence of the typed string
     // sorted by the length of the longest contiguous subsequence of the typed string in the message
-    return 2 + (text.length - getSubSequenceWeight(text, input)) / 1000;
-  } else if (hint && getSubSequenceWeight(hint, input)) {
+    return 2 + (text.length - textWeight) / 1000;
+  }
+
+  const hintWeight = getSubSequenceWeight(hint, input);
+  if (hint && hintWeight) {
     // same, but for hints
-    return 3 + (hint.length - getSubSequenceWeight(hint, input)) / 1000;
+    return 3 + (hint.length - hintWeight) / 1000;
   } else {
     return 4;
   }
@@ -106,16 +116,14 @@ function getChoicePriority(choice: StringOrChoice, input: string): number {
  */
 function getSubSequenceWeight(str: string, sequence: string): number {
   const indexes = getSubsequenceIndexes(str, sequence);
-  if (indexes.length === 0) {
-    return 0;
-  }
   return indexes.reduce((acc, [start, end]) => acc + (end - start + 1) ** 2, 0);
 }
 
 /**
- * Gets the indexes of the chars from `str` in the subsequence `substr` in `str`.
+ * Gets the indexes of the chars from `message` in the subsequence `typed` in `message`.
  * Does a greedy search for the longest contiguous subsequences.
  * The result are pairs of start/end indexes for the subsequences.
+ * `typed` is assumed to be a subsequence of `message`.
  */
 function getSubsequenceIndexes(
   message: string,
@@ -130,11 +138,7 @@ function getSubsequenceIndexes(
     typed = typed.toLowerCase();
   }
 
-  if (!hasSubsequence(message, typed, false)) {
-    throw new Error(
-      `The string "${typed}" is not a subsequence of "${message}"`,
-    );
-  }
+  // from how this function is used, we know that `typed` is a subsequence of `message`
 
   // a greedy algorithm that finds the longest contiguous subsequences
   const result: [number, number][] = [];
