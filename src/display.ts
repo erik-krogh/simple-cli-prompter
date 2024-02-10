@@ -1,5 +1,5 @@
 import stripAnsi from "strip-ansi";
-import { ansiAwareSlice } from "./utils";
+import { ansiAwareSlice } from "./utils.js";
 
 // how many lines down we've moved the cursor. Used to move back up before rendering.
 let linesDown: number = 0;
