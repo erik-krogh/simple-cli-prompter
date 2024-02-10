@@ -242,7 +242,7 @@ export function makeFileCompletions(
   return completions;
 }
 
-import * as cp from "child_process";
+import type { ChildProcess } from "child_process";
 
 /**
  * Waits for the given process to terminate, and returns its stdout.
@@ -250,7 +250,7 @@ import * as cp from "child_process";
  */
 export function waitForProcess(
   msg: string,
-  proc: cp.ChildProcess,
+  proc: ChildProcess,
 ): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     let stderr = "";

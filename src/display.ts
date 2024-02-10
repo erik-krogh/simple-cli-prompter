@@ -106,7 +106,7 @@ export function startDisplay(host: DisplayHost): Display {
     // The first line is special, that's the one that has the cursor.
     // We show the hint, only if there is space on the first line (cutting of the last part of the hint if necessary).
     // If the line is still too long, we split it across multiple lines (ansi code aware).
-    let firstLine = printed.prefix + input + (printed.suffix ?? "");
+    let firstLine: string;
     const maxLength = process.stdout.columns || 80;
     if (stripAnsi(printed.prefix + input).length > maxLength) {
       firstLine = printed.prefix + input;
@@ -254,7 +254,7 @@ function handleKeyPress(
   // option + right arrow or ctrl + right arrow, move cursor to end of word, or end of string if no match
   else if (char === "\u001b\u001b[C" || char === "\u001b[1;5C") {
     const match = input.slice(cursor).match(/\s/);
-    cursor += match ? match.index! + 1 : input.length - cursor;
+    cursor += match && match.index ? match.index + 1 : input.length - cursor;
   }
 
   // option + left arrow or ctrl + left arrow, move cursor to start of word
@@ -290,5 +290,5 @@ function mkPromise<T>(): {
   const promise = new Promise<T>((res) => {
     resolve = res;
   });
-  return { promise, resolve: resolve! };
+  return { promise, resolve: resolve! }; // eslint-disable-line @typescript-eslint/no-non-null-assertion
 }

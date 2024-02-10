@@ -97,7 +97,7 @@ export async function confirm(message, defaultChoice = true, secondsTimeout = 0)
     const disp = display.startDisplay(host);
     currentDisplay = disp;
     if (secondsTimeout > 0) {
-        (async () => {
+        void (async () => {
             while (secondsTimeout > 0 && answer === undefined) {
                 await new Promise((resolve) => setTimeout(resolve, 1000));
                 secondsTimeout--;
@@ -113,6 +113,9 @@ export async function confirm(message, defaultChoice = true, secondsTimeout = 0)
     }
     await disp.promise;
     printEndText(text, answer + "");
+    if (typeof answer !== "boolean") {
+        throw new Error("Answer was not set");
+    }
     return answer;
 }
 /**

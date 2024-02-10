@@ -144,7 +144,7 @@ export async function confirm(
   currentDisplay = disp;
 
   if (secondsTimeout > 0) {
-    (async () => {
+    void (async () => {
       while (secondsTimeout > 0 && answer === undefined) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         secondsTimeout--;
@@ -163,7 +163,10 @@ export async function confirm(
 
   printEndText(text, answer + "");
 
-  return answer!;
+  if (typeof answer !== "boolean") {
+    throw new Error("Answer was not set");
+  }
+  return answer;
 }
 
 /**

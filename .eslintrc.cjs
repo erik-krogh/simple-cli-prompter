@@ -15,7 +15,12 @@ module.exports = {
   ],
   rules: {
     "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+    "@typescript-eslint/consistent-type-exports": "error",
+    "@typescript-eslint/consistent-type-imports": "error",
+    "@typescript-eslint/no-unsafe-return": "error",
+    "@typescript-eslint/no-floating-promises": "error",
+    "@typescript-eslint/no-unnecessary-type-assertion": "warn",
     "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
-    "@typescript-eslint/no-non-null-assertion": "off",
+    eqeqeq: "error",
   },
 };
