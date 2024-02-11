@@ -57,9 +57,9 @@ export function hasSubsequence(str, sequence, caseNormalize = true) {
 export function filterAndSortChoices(choices, input) {
     return choices
         .filter((choice) => {
-        return hasSubsequence(typeof choice === "string"
+        return hasSubsequence(stripAnsi(typeof choice === "string"
             ? choice
-            : (choice.message ?? choice.name) + (choice.hint ?? ""), input);
+            : (choice.message ?? choice.name) + (choice.hint ?? "")), input);
     })
         .map((choice) => [choice, getChoicePriority(choice, input)])
         .sort((a, b) => a[1] - b[1])

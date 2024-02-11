@@ -71,9 +71,11 @@ export function filterAndSortChoices(choices: StringOrChoice[], input: string) {
   return choices
     .filter((choice) => {
       return hasSubsequence(
-        typeof choice === "string"
-          ? choice
-          : (choice.message ?? choice.name) + (choice.hint ?? ""),
+        stripAnsi(
+          typeof choice === "string"
+            ? choice
+            : (choice.message ?? choice.name) + (choice.hint ?? ""),
+        ),
         input,
       );
     })

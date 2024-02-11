@@ -118,4 +118,14 @@ describe("highlighting", function () {
     const sorted = utils.filterAndSortChoices([choices], input);
     console.log("Sorted: ", sorted);
   });
+
+  it("should not crash", function () {
+    const list = [
+      "oos-backend (cs/log-forging/100) \u001b[31mFix generator returned a non-critical error\u001b[39m",
+    ];
+
+    const result = utils.filterAndSortChoices(list, "cs/com");
+
+    console.log(result.length);
+  });
 });
