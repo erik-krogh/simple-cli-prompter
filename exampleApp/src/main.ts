@@ -1,4 +1,4 @@
-import * as prompt from "prompter";
+import * as prompt from "simple-cli-prompter";
 import * as tmp from "tmp";
 import * as cp from "child_process";
 import open from "open";
