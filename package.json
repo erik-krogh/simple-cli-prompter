@@ -1,7 +1,7 @@
 {
   "name": "simple-cli-prompter",
   "version": "0.0.1",
-  "description": "Simple CLI prompter",
+  "description": "Simple utility for prompting the user for input in a CLI environment",
   "main": "dist/src/index.js",
   "types": "dist/src/index.d.ts",
   "type": "module",

@@ -1,10 +1,10 @@
 # Simple CLI prompter
 
-This repo contains simple utility methods to prompts users for input in a CLI environment.
+This repo contains simple utility methods for promting the user for input in a CLI application.
 There is deliberately only a few different types of prompts that behave consistently and are easy to use (both for the end-user and the developer).
 
 When there are options to select you can always type to search for the option you want.  
-The search is case-insensitive and looks for subsequences, e.g. to find the option `This is a test` you can type `is test`, which will match (and highlight) `is` and `test` in the option.
+The search is case-insensitive and looks for subsequences, e.g. to find the item `This is a test` you can type `is test`, which will match (and highlight) `is` and `test` in the item.
 
 ## API
 
