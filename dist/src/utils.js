@@ -141,15 +141,22 @@ function getSubsequenceIndexes(message, typed) {
     return result;
 }
 export function highlightSubsequence(message, typed) {
-    const startStopIndexes = getSubsequenceIndexes(message, typed); // the chars from `message` that are in the subsequence `typed` in `message` and should be highlighted
+    const startStopIndexes = getSubsequenceIndexes(stripAnsi(message), typed); // the chars from `message` that are in the subsequence `typed` in `message` and should be highlighted
+    console.log(JSON.stringify(startStopIndexes));
     let result = "";
     let last = 0;
     for (const [start, end] of startStopIndexes) {
-        result += ansiAwareSlice(message, last, start); //message.slice(last, start);
-        result += color.cyan.bold.underline(ansiAwareSlice(message, start, end + 1)); //message.slice(start, end + 1));
+        const prefix = ansiAwareSlice(message, last, start);
+        console.log('Prefix: "' + prefix + '"');
+        result += prefix; //message.slice(last, start);
+        const highlighted = color.cyan.bold.underline(ansiAwareSlice(message, start, end + 1));
+        console.log('Highlighted: "' + highlighted + '"');
+        result += highlighted; //message.slice(start, end + 1));
         last = end + 1;
     }
-    result += ansiAwareSlice(message, last, message.length); //message.slice(last);
+    const suffix = ansiAwareSlice(message, last, message.length);
+    console.log('Suffix: "' + suffix + '"');
+    result += suffix; //message.slice(last);
     return result;
 }
 import * as path from "path";
@@ -252,9 +259,7 @@ export function ansiAwareSlice(str, start, end) {
             if (char.match(/[A-Za-z]/)) {
                 inEscape = false;
                 escapeSequences += escape; // Add the escape sequence to the collection
-                if (visible >= start && visible < end) {
-                    out += escape;
-                }
+                out += escape;
                 escape = "";
             }
         }

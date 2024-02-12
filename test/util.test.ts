@@ -128,4 +128,17 @@ describe("highlighting", function () {
 
     console.log(result.length);
   });
+
+  it("should highlight correctly on tricky input", function () {
+    let longStr = "foo " + color.red("highlighted");
+    let input = "fooi";
+
+    // the actual computation gets tricky, so I just hardcode the expected result
+    let expected =
+      "\u001b[31m\u001b[39m\u001b[31m\u001b[39m\u001b[36m\u001b[1m\u001b[4mfoo\u001b[31m\u001b[39m\u001b[36m\u001b[31m\u001b[39m\u001b[36m\u001b[24m\u001b[22m\u001b[39m \u001b[31mh\u001b[39m\u001b[31m\u001b[39m\u001b[36m\u001b[1m\u001b[4m\u001b[31mi\u001b[39m\u001b[36m\u001b[31m\u001b[39m\u001b[36m\u001b[24m\u001b[22m\u001b[39m\u001b[31mghlighted\u001b[39m\u001b[31m\u001b[39m";
+
+    const actual = utils.highlightSubsequence(longStr, input);
+
+    expect(actual).to.equal(expected);
+  });
 });
