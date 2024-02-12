@@ -15,6 +15,11 @@
     "watch": "npx tsc --watch"
   },
   "author": "Erik Krogh Kristensen <erik-krogh@github.com>",
+  "homepage": "https://github.com/erik-krogh/simple-cli-prompter",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/erik-krogh/simple-cli-prompter.git"
+  },
   "license": "ISC",
   "devDependencies": {
     "@types/chai": "^4.3.11",

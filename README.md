@@ -1,4 +1,4 @@
-# Simple CLI prompter
+<h1>Simple CLI prompter <a href="https://npmjs.org/package/simple-cli-prompter"><img src="https://img.shields.io/npm/v/simple-cli-prompter.svg" alt="version"></a></h1>
 
 This repo contains simple utility methods for promting the user for input in a CLI application.
 There is deliberately only a few different types of prompts that behave consistently and are easy to use (both for the end-user and the developer).
