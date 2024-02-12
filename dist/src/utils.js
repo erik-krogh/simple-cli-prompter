@@ -142,21 +142,17 @@ function getSubsequenceIndexes(message, typed) {
 }
 export function highlightSubsequence(message, typed) {
     const startStopIndexes = getSubsequenceIndexes(stripAnsi(message), typed); // the chars from `message` that are in the subsequence `typed` in `message` and should be highlighted
-    console.log(JSON.stringify(startStopIndexes));
     let result = "";
     let last = 0;
     for (const [start, end] of startStopIndexes) {
         const prefix = ansiAwareSlice(message, last, start);
-        console.log('Prefix: "' + prefix + '"');
         result += prefix; //message.slice(last, start);
         const highlighted = color.cyan.bold.underline(ansiAwareSlice(message, start, end + 1));
-        console.log('Highlighted: "' + highlighted + '"');
-        result += highlighted; //message.slice(start, end + 1));
+        result += highlighted;
         last = end + 1;
     }
     const suffix = ansiAwareSlice(message, last, message.length);
-    console.log('Suffix: "' + suffix + '"');
-    result += suffix; //message.slice(last);
+    result += suffix;
     return result;
 }
 import * as path from "path";
