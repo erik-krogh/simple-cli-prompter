@@ -136,7 +136,6 @@ export function waitForProcess(
     let stderr = "";
     let stdout = "";
     proc.stdout?.on("data", (data) => {
-      console.log("Data:" + data.toString());
       stdout += data;
     });
     proc.stderr?.on("data", (data) => {
