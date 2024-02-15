@@ -1,4 +1,4 @@
-import type { StringOrChoice } from ".";
+import type { StringOrChoice } from "./index.js";
 import stripAnsi from "strip-ansi";
 import color from "ansi-colors";
 
@@ -84,41 +84,34 @@ export function filterAndSortChoices(choices: StringOrChoice[], input: string) {
     .map(([choice]) => choice);
 }
 
+// lower is better
 function getChoicePriority(choice: StringOrChoice, input: string): number {
   const text = stripAnsi(renderChoice(choice, false, "", false));
-  const hint =
-    typeof choice === "string" ? "" : choice?.hint?.toLowerCase() || "";
   if (text.indexOf(input) !== -1) {
     // first the exact matches
     // sorted by where the match is (earlier matches are better)
     return 1 + text.indexOf(input) / 1000;
   }
 
-  const textWeight = getSubSequenceWeight(text, input);
-  if (textWeight) {
-    // then the matches that are a subsequence of the typed string
-    // sorted by the length of the longest contiguous subsequence of the typed string in the message
-    return 2 + (text.length - textWeight) / 1000;
-  }
-
-  const hintWeight = getSubSequenceWeight(hint, input);
-  if (hint && hintWeight) {
-    // same, but for hints
-    return 3 + (hint.length - hintWeight) / 1000;
-  } else {
-    return 4;
-  }
-}
-
-/**
- * returns 0 if `str` does not contain the subsequence `substr`.
- * Otherwise returns `sum(len(subseq)^2)`, where `subsub` is each contiguous subsequence of `substr` in `str`.
- * For example, if `str` is "abcdefg" and `substr` is "bcdfg", then the result is `(3^2 + 2^2) = 13`.
- * The search for longest contiguous subsequence is greedy.
- */
-function getSubSequenceWeight(str: string, sequence: string): number {
-  const indexes = getSubsequenceIndexes(str, sequence);
-  return indexes.reduce((acc, [start, end]) => acc + (end - start + 1) ** 2, 0);
+  const indexes = getSubsequenceIndexes(text, input);
+  const textWeight = indexes.reduce(
+    (acc, [start, end]) => acc + (end - start + 1) ** 2,
+    0,
+  );
+  const numMatches = indexes.length;
+  const firstStart = indexes[0][0];
+  // then the matches that are a subsequence of the typed string
+  // sorted by the number of matches (less is better)
+  // then sorted by better grouping of the matches (the weigth) (more is better)
+  // tie-breaker: the start index of the first match (earlier is better)
+  // second tie-breaker: the length of the text (shorter is better)
+  return (
+    2 +
+    numMatches / 1000 -
+    textWeight / 1000000 +
+    firstStart / 10000000 +
+    text.length / 1000000000
+  );
 }
 
 /**

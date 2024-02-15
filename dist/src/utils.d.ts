@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import type { StringOrChoice } from ".";
+import type { StringOrChoice } from "./index.js";
 export declare function renderChoice(choice: StringOrChoice, selected?: boolean, input?: string, arrowSelected?: boolean): string;
 /**
  * Holds if `substr` is a subsequence of `str`.
@@ -7,6 +7,7 @@ export declare function renderChoice(choice: StringOrChoice, selected?: boolean,
 export declare function hasSubsequence(str: string, sequence: string, caseNormalize?: boolean): boolean;
 export declare function filterAndSortChoices(choices: StringOrChoice[], input: string): StringOrChoice[];
 export declare function highlightSubsequence(message: string, typed: string): string;
+export declare function expandHomeDir(p: string): string;
 export declare function makeFileCompletions(input: string, ext?: string, cwd?: string): string[];
 import type { ChildProcess } from "child_process";
 /**

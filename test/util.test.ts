@@ -141,4 +141,16 @@ describe("highlighting", function () {
 
     expect(actual).to.equal(expected);
   });
+
+  it("should prioritize correctly", function () {
+    const choice1 =
+      "Ajax: .load() " + color.dim("3a68c114e3a30af86dc261c9d62ce2ae4144d420");
+    const choice2 = "jquery ajax: closes #2842. " + color.dim("ad");
+
+    const input = "Ajaxload";
+
+    const sorted = utils.filterAndSortChoices([choice1, choice2], input);
+
+    expect(sorted).to.deep.equal([choice1, choice2]);
+  });
 });
