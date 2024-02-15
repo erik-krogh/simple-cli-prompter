@@ -158,11 +158,16 @@ export function highlightSubsequence(message, typed) {
 import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
-export function makeFileCompletions(input, ext, cwd) {
-    if (input[0] === "~") {
-        // add the home dir
-        input = path.join(os.homedir(), input.slice(1));
+export function expandHomeDir(p) {
+    if (p[0] === "~") {
+        return path.join(os.homedir(), p.slice(1));
     }
+    else {
+        return p;
+    }
+}
+export function makeFileCompletions(input, ext, cwd) {
+    input = expandHomeDir(input);
     const p = path.resolve(cwd ?? process.cwd(), input);
     const parentDir = path.dirname(p);
     if (!fs.existsSync(parentDir)) {

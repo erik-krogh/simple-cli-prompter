@@ -192,15 +192,20 @@ import * as path from "path";
 import * as os from "os";
 import * as fs from "fs";
 
+export function expandHomeDir(p: string): string {
+  if (p[0] === "~") {
+    return path.join(os.homedir(), p.slice(1));
+  } else {
+    return p;
+  }
+}
+
 export function makeFileCompletions(
   input: string,
   ext?: string,
   cwd?: string,
 ): string[] {
-  if (input[0] === "~") {
-    // add the home dir
-    input = path.join(os.homedir(), input.slice(1));
-  }
+  input = expandHomeDir(input);
   const p = path.resolve(cwd ?? process.cwd(), input);
   const parentDir = path.dirname(p);
   if (!fs.existsSync(parentDir)) {

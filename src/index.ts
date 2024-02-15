@@ -184,15 +184,12 @@ export async function file(
 
   const host = {
     print: () => {
-      const completionsHints =
-        input === ""
-          ? []
-          : utils
-              .makeFileCompletions(input, ext, cwd)
-              .map((c) => input + c)
-              .map((c) => path.basename(c) + (c.endsWith("/") ? "/" : ""))
-              .filter((s) => s)
-              .slice(0, NUM_OF_SHOWN_CHOICES);
+      const completionsHints = utils
+        .makeFileCompletions(input, ext, cwd)
+        .map((c) => input + c)
+        .map((c) => path.basename(c) + (c.endsWith("/") ? "/" : ""))
+        .filter((s) => s)
+        .slice(0, NUM_OF_SHOWN_CHOICES);
       return {
         prefix: text,
         suffix: color.dim(" You can use tab completion"),
@@ -245,7 +242,7 @@ export async function file(
 
   printEndText(text, res);
 
-  return res;
+  return utils.expandHomeDir(res);
 }
 
 /*
