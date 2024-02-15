@@ -27,7 +27,7 @@
   "dependencies": {
     "ansi-colors": "^4.1.3",
     "open": "^10.0.3",
-    "simple-cli-prompter": "^0.0.4",
+    "simple-cli-prompter": "^0.0.5",
     "strip-ansi": "^7.1.0",
     "tmp": "^0.2.1",
     "ts-node": "^10.9.2"
