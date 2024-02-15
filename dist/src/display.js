@@ -140,15 +140,9 @@ export function startDisplay(host) {
             return;
         }
         const oldInput = input;
-        // left arrow, cursor left
-        let skip = false;
-        ({ cursor, input, skip } = handleKeyPress(char, cursor, input, done));
-        if (skip) {
-            update();
-            return;
-        }
-        if (input !== oldInput) {
-            host.inputChanged && host.inputChanged(input);
+        ({ cursor, input } = handleKeyPress(char, cursor, input, done));
+        if (input !== oldInput && !stopped && host.inputChanged) {
+            host.inputChanged(input);
         }
         update();
     }
@@ -189,6 +183,14 @@ function handleKeyPress(char, cursor, input, done) {
     else if (char === "\u000b") {
         input = input.slice(0, cursor);
     }
+    // ctrl + d, or zero-width-space and empty input, exit hard
+    else if (char === "\u0004" && input === "") {
+        process.exit(1);
+    }
+    // else, if ctrl + d, skip
+    else if (char === "\u0004") {
+        return { cursor, input };
+    }
     // option + right arrow or ctrl + right arrow, move cursor to end of word, or end of string if no match
     else if (char === "\u001b\u001b[C" || char === "\u001b[1;5C") {
         const match = input.slice(cursor).match(/\s/);
@@ -206,7 +208,7 @@ function handleKeyPress(char, cursor, input, done) {
     // enter === done
     else if (char === "\r") {
         done(input);
-        return { cursor, input, skip: true };
+        return { cursor, input };
     }
     // plain ascii chars, add to input (at cursor position)
     else {

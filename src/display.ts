@@ -183,17 +183,11 @@ export function startDisplay(host: DisplayHost): Display {
     }
 
     const oldInput = input;
-    // left arrow, cursor left
-    let skip: boolean | undefined = false;
-    ({ cursor, input, skip } = handleKeyPress(char, cursor, input, done));
 
-    if (skip) {
-      update();
-      return;
-    }
+    ({ cursor, input } = handleKeyPress(char, cursor, input, done));
 
-    if (input !== oldInput) {
-      host.inputChanged && host.inputChanged(input);
+    if (input !== oldInput && !stopped && host.inputChanged) {
+      host.inputChanged(input);
     }
 
     update();
@@ -209,7 +203,7 @@ function handleKeyPress(
   cursor: number,
   input: string,
   done: (result: string) => void,
-): { cursor: number; input: string; skip?: boolean } {
+): { cursor: number; input: string } {
   if (char === "\u001b[D") {
     cursor = Math.max(0, cursor - 1);
   }
@@ -251,6 +245,16 @@ function handleKeyPress(
     input = input.slice(0, cursor);
   }
 
+  // ctrl + d, or zero-width-space and empty input, exit hard
+  else if (char === "\u0004" && input === "") {
+    process.exit(1);
+  }
+
+  // else, if ctrl + d, skip
+  else if (char === "\u0004") {
+    return { cursor, input };
+  }
+
   // option + right arrow or ctrl + right arrow, move cursor to end of word, or end of string if no match
   else if (char === "\u001b\u001b[C" || char === "\u001b[1;5C") {
     const match = input.slice(cursor).match(/\s/);
@@ -271,7 +275,7 @@ function handleKeyPress(
   // enter === done
   else if (char === "\r") {
     done(input);
-    return { cursor, input, skip: true };
+    return { cursor, input };
   }
 
   // plain ascii chars, add to input (at cursor position)
