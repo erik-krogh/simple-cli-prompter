@@ -204,9 +204,11 @@ export async function multiple(text, choices, requiredAtLeastOne = true) {
             // add a green bold checkmark to the selected choices, and a dimmed (default) to the rest.
             const render = (choice, index) => {
                 const isSelected = selected.has(choice);
-                const prefix = isSelected ? color.green.bold("✔ ") : color.dim("✔ ");
+                // filled ballot box vs. empty ballot box
+                const prefix = isSelected ? color.green.bold("☑ ") : color.dim("☐ ");
+                const modifier = isSelected ? color.bold : (s) => s;
                 return (prefix +
-                    utils.renderChoice(choice, index === selectedLine, input, false));
+                    modifier(utils.renderChoice(choice, index === selectedLine, input, false)));
             };
             return {
                 ...printChoices(choices, input, startOffset, text, render),
