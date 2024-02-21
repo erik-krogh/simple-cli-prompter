@@ -283,7 +283,9 @@ export async function multiple(
 
         return (
           prefix +
-          modifier(utils.renderChoice(choice, index === selectedLine, input, false))
+          modifier(
+            utils.renderChoice(choice, index === selectedLine, input, false),
+          )
         );
       };
 
