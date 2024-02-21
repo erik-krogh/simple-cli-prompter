@@ -20,3 +20,9 @@ export declare function waitForProcess(msg: string, proc: ChildProcess): Promise
  * Returns a string where the ansi-striped length is between `start` and `end`, while making sure to not cut off any ansi escape sequences and properly ending all ansi codes.
  */
 export declare function ansiAwareSlice(str: string, start: number, end: number): string;
+/**
+ * Wraps the function `fn` such that it is called `ms` milliseconds after the last call to the returned function.
+ * Multiple calls within `ms` milliseconds will only result in one call.
+ * Calls that are more than `ms` milliseconds apart will result in multiple calls.
+ */
+export declare function debounce(fn: () => void, ms: number): () => void;

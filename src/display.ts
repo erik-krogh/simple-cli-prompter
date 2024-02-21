@@ -1,5 +1,5 @@
 import stripAnsi from "strip-ansi";
-import { ansiAwareSlice } from "./utils.js";
+import { ansiAwareSlice, debounce } from "./utils.js";
 
 // how many lines down we've moved the cursor. Used to move back up before rendering.
 let linesDown: number = 0;
@@ -102,7 +102,7 @@ export function startDisplay(host: DisplayHost): Display {
   let cursor = 0;
   let stopped = false;
 
-  function update() {
+  const update = debounce(function () {
     if (stopped) {
       return;
     }
@@ -139,7 +139,7 @@ export function startDisplay(host: DisplayHost): Display {
       [...firstLines, ...(printed.lines ?? [])],
       cursor + stripAnsi(printed.prefix).length,
     );
-  }
+  }, 10);
 
   currentUpdate = update;
 

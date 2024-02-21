@@ -273,4 +273,21 @@ export function ansiAwareSlice(str, start, end) {
     out += escapeSequences;
     return out;
 }
+/**
+ * Wraps the function `fn` such that it is called `ms` milliseconds after the last call to the returned function.
+ * Multiple calls within `ms` milliseconds will only result in one call.
+ * Calls that are more than `ms` milliseconds apart will result in multiple calls.
+ */
+export function debounce(fn, ms) {
+    let timeout = null;
+    return function () {
+        if (timeout !== null) {
+            clearTimeout(timeout);
+        }
+        timeout = setTimeout(() => {
+            timeout = null;
+            fn();
+        }, ms);
+    };
+}
 //# sourceMappingURL=utils.js.map
