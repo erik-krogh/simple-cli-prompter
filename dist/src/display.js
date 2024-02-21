@@ -161,7 +161,7 @@ function handleKeyPress(char, cursor, input, done) {
         cursor = Math.min(input.length, cursor + 1);
     }
     // backspace, remove char at cursor
-    else if (char === "\u007f") {
+    else if (char === "\u007f" || char === "\b") {
         input = input.slice(0, cursor - 1) + input.slice(cursor);
         cursor = Math.max(0, cursor - 1);
     }
