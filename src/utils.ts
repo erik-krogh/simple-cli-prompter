@@ -215,7 +215,7 @@ export function makeFileCompletions(
       return [];
     }
 
-    let completions: string[] = [];
+    const completions: string[] = [];
 
     if (isDir(p)) {
       completions.push(

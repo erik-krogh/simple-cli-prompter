@@ -173,7 +173,7 @@ export function makeFileCompletions(input, ext, cwd) {
         if (!fs.existsSync(parentDir)) {
             return [];
         }
-        let completions = [];
+        const completions = [];
         if (isDir(p)) {
             completions.push(...fs
                 .readdirSync(p)
