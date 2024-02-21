@@ -46,14 +46,13 @@ function render(lines: string[], cursor: number = 0) {
   process.stdout.write(str);
 }
 
-const handlers: ((char: string) => void)[] = [];
-process.stdin.on("data", (key: string) => {
-  // Ctrl-C is very hardcoded, to make sure it always works
-  if (key === "\u0003") {
-    process.stdout.write("\x1B[?25h"); // show the cursor
-    process.exit(0);
-  }
-  handlers.forEach((handler) => {
+function registerHandler(handler: (char: string) => void) {
+  function listener(key: string) {
+    // Ctrl-C is very hardcoded, to make sure it always works
+    if (key === "\u0003") {
+      process.stdout.write("\x1B[?25h"); // show the cursor
+      process.exit(0);
+    }
     // if ordinary keyboard char, extended ascii, special char, unicode, etc. handle one by one
     if (/^[\x20-\x7E\u00A0-\uFFFF]+$/.test(key)) {
       for (let i = 0; i < key.length; i++) {
@@ -63,8 +62,14 @@ process.stdin.on("data", (key: string) => {
       // might be an escape sequence, handle as one
       handler(key);
     }
-  });
-});
+  }
+
+  process.stdin.on("data", listener);
+
+  return {
+    remove: () => process.stdin.off("data", listener),
+  };
+}
 
 export type DisplayHost = {
   print: () => {
@@ -142,11 +147,13 @@ export function startDisplay(host: DisplayHost): Display {
 
   const { resolve, promise } = mkPromise<string>();
 
+  const register = registerHandler(handler);
+
   const done: (result: string) => void = function (result: string) {
     if (stopped) {
       return;
     }
-    handlers.splice(handlers.indexOf(handler), 1);
+    register.remove();
     // it's the callers responsibility to print the result. We reset the display and clear the prompting UI.
     if (linesDown > 0) {
       // move up again
@@ -192,8 +199,6 @@ export function startDisplay(host: DisplayHost): Display {
 
     update();
   }
-
-  handlers.push(handler);
 
   return display;
 }
