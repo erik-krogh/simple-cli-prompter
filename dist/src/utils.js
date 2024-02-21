@@ -173,8 +173,9 @@ export function makeFileCompletions(input, ext, cwd) {
         if (!fs.existsSync(parentDir)) {
             return [];
         }
+        let completions = [];
         if (isDir(p)) {
-            return fs
+            completions.push(...fs
                 .readdirSync(p)
                 .filter((f) => {
                 return ((typeof ext === "undefined" ||
@@ -189,24 +190,30 @@ export function makeFileCompletions(input, ext, cwd) {
                 else {
                     return f;
                 }
-            });
+            })
+                .map((f) => "/" + f));
         }
         const file = path.basename(p);
-        return fs
-            .readdirSync(parentDir)
-            .filter((f) => {
-            return (f.startsWith(file) &&
-                (typeof ext === "undefined" || f.endsWith(ext) || !f.includes(".")));
-        })
-            .map((f) => {
-            if (isDir(path.join(parentDir, f))) {
-                return f.slice(file.length) + "/";
-            }
-            else {
-                return f.slice(file.length);
-            }
-        })
-            .filter((f) => !(f === "/" && input.endsWith("/")));
+        if (!input.endsWith("/")) {
+            completions.push(...fs
+                .readdirSync(parentDir)
+                .filter((f) => {
+                return (f.startsWith(file) &&
+                    (typeof ext === "undefined" ||
+                        f.endsWith(ext) ||
+                        !f.includes(".")));
+            })
+                .map((f) => {
+                if (isDir(path.join(parentDir, f))) {
+                    return f.slice(file.length) + "/";
+                }
+                else {
+                    return f.slice(file.length);
+                }
+            })
+                .filter((f) => !(f === "/" && input.endsWith("/"))));
+        }
+        return completions;
     }
     catch (ignored) {
         // access denied or similar

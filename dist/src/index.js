@@ -129,8 +129,12 @@ export async function file(text, ext, cwd) {
         print: () => {
             const completionsHints = utils
                 .makeFileCompletions(input, ext, cwd)
-                .map((c) => input + c)
-                .map((c) => path.basename(c) + (c.endsWith("/") ? "/" : ""))
+                .map((c) => {
+                const completion = input + c;
+                return ((c.startsWith("/") && !input.endsWith("/") && input ? "/" : "") +
+                    path.basename(completion) +
+                    (completion.endsWith("/") ? "/" : ""));
+            })
                 .filter((s) => s)
                 .slice(0, NUM_OF_SHOWN_CHOICES);
             return {

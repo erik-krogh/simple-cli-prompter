@@ -215,44 +215,57 @@ export function makeFileCompletions(
       return [];
     }
 
+    let completions: string[] = [];
+
     if (isDir(p)) {
-      return fs
-        .readdirSync(p)
-        .filter((f) => {
-          return (
-            (typeof ext === "undefined" ||
-              f.endsWith(ext) ||
-              !f.includes(".")) &&
-            !f.startsWith(".")
-          );
-        })
-        .map((f) => {
-          if (isDir(path.join(p, f))) {
-            return f + "/";
-          } else {
-            return f;
-          }
-        });
+      completions.push(
+        ...fs
+          .readdirSync(p)
+          .filter((f) => {
+            return (
+              (typeof ext === "undefined" ||
+                f.endsWith(ext) ||
+                !f.includes(".")) &&
+              !f.startsWith(".")
+            );
+          })
+          .map((f) => {
+            if (isDir(path.join(p, f))) {
+              return f + "/";
+            } else {
+              return f;
+            }
+          })
+          .map((f) => "/" + f),
+      );
     }
 
     const file = path.basename(p);
 
-    return fs
-      .readdirSync(parentDir)
-      .filter((f) => {
-        return (
-          f.startsWith(file) &&
-          (typeof ext === "undefined" || f.endsWith(ext) || !f.includes("."))
-        );
-      })
-      .map((f) => {
-        if (isDir(path.join(parentDir, f))) {
-          return f.slice(file.length) + "/";
-        } else {
-          return f.slice(file.length);
-        }
-      })
-      .filter((f) => !(f === "/" && input.endsWith("/")));
+    if (!input.endsWith("/")) {
+      completions.push(
+        ...fs
+          .readdirSync(parentDir)
+          .filter((f) => {
+            return (
+              f.startsWith(file) &&
+              (typeof ext === "undefined" ||
+                f.endsWith(ext) ||
+                !f.includes("."))
+            );
+          })
+          .map((f) => {
+            if (isDir(path.join(parentDir, f))) {
+              return f.slice(file.length) + "/";
+            } else {
+              return f.slice(file.length);
+            }
+          })
+          .filter((f) => !(f === "/" && input.endsWith("/"))),
+      );
+    }
+
+    return completions;
   } catch (ignored) {
     // access denied or similar
     return [];
