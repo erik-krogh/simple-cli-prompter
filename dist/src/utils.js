@@ -156,40 +156,50 @@ export function expandHomeDir(p) {
         return p;
     }
 }
+// version of fs.existsSync && fs.lstatSync that doesn't crash on "operation not permitted" errors
+function isDir(p) {
+    try {
+        return fs.existsSync(p) && fs.lstatSync(p).isDirectory();
+    }
+    catch (e) {
+        return false;
+    }
+}
 export function makeFileCompletions(input, ext, cwd) {
     input = expandHomeDir(input);
     const p = path.resolve(cwd ?? process.cwd(), input);
     const parentDir = path.dirname(p);
-    if (!fs.existsSync(parentDir)) {
-        return [];
-    }
-    if (fs.existsSync(p) && fs.lstatSync(p).isDirectory()) {
-        return fs
-            .readdirSync(p)
-            .filter((f) => {
-            return ((typeof ext === "undefined" || f.endsWith(ext) || !f.includes(".")) &&
-                !f.startsWith("."));
-        })
-            .map((f) => {
-            if (fs.lstatSync(path.join(p, f)).isDirectory()) {
-                return f + "/";
-            }
-            else {
-                return f;
-            }
-        });
-    }
-    const file = path.basename(p);
-    let completions;
     try {
-        completions = fs
+        if (!fs.existsSync(parentDir)) {
+            return [];
+        }
+        if (isDir(p)) {
+            return fs
+                .readdirSync(p)
+                .filter((f) => {
+                return ((typeof ext === "undefined" ||
+                    f.endsWith(ext) ||
+                    !f.includes(".")) &&
+                    !f.startsWith("."));
+            })
+                .map((f) => {
+                if (isDir(path.join(p, f))) {
+                    return f + "/";
+                }
+                else {
+                    return f;
+                }
+            });
+        }
+        const file = path.basename(p);
+        return fs
             .readdirSync(parentDir)
             .filter((f) => {
             return (f.startsWith(file) &&
                 (typeof ext === "undefined" || f.endsWith(ext) || !f.includes(".")));
         })
             .map((f) => {
-            if (fs.lstatSync(path.join(parentDir, f)).isDirectory()) {
+            if (isDir(path.join(parentDir, f))) {
                 return f.slice(file.length) + "/";
             }
             else {
@@ -200,9 +210,8 @@ export function makeFileCompletions(input, ext, cwd) {
     }
     catch (ignored) {
         // access denied or similar
-        completions = [];
+        return [];
     }
-    return completions;
 }
 /**
  * Waits for the given process to terminate, and returns its stdout.
