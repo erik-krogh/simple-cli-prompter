@@ -51,11 +51,11 @@ function registerHandler(handler: (char: string) => void) {
     if (Buffer.isBuffer(key)) {
       if (key[0] > 127 && key[1] === void 0) {
         key[0] -= 128;
-        key = '\x1b' + String(key);
+        key = "\x1b" + String(key);
       } else {
         key = String(key);
       }
-    } else if (key !== void 0 && typeof key !== 'string') {
+    } else if (key !== void 0 && typeof key !== "string") {
       key = String(key);
     }
 

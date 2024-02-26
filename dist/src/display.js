@@ -42,6 +42,18 @@ function render(lines, cursor = 0) {
 }
 function registerHandler(handler) {
     function listener(key) {
+        if (Buffer.isBuffer(key)) {
+            if (key[0] > 127 && key[1] === void 0) {
+                key[0] -= 128;
+                key = "\x1b" + String(key);
+            }
+            else {
+                key = String(key);
+            }
+        }
+        else if (key !== void 0 && typeof key !== "string") {
+            key = String(key);
+        }
         // Ctrl-C is very hardcoded, to make sure it always works
         if (key === "\u0003") {
             process.stdout.write("\x1B[?25h"); // show the cursor
@@ -118,8 +130,8 @@ export function startDisplay(host) {
             process.stdout.write("\x1B[" + linesDown + "A");
         }
         process.stdout.write("\x1B[1000C\x1B[J\n"); // move to the end of the line, clear the screen, and start a new line
-        process.stdin.setRawMode(false);
-        process.stdin.pause();
+        if (process.stdin.isTTY)
+            process.stdin.setRawMode(false);
         stopped = true;
         resolve(result);
     };
@@ -135,8 +147,8 @@ export function startDisplay(host) {
         },
         isStopped: () => stopped,
     };
-    process.stdin.setRawMode(true);
-    process.stdin.resume();
+    if (process.stdin.isTTY)
+        process.stdin.setRawMode(true);
     process.stdin.setEncoding("utf8");
     function handler(char) {
         if (host.handleKey && host.handleKey(char, display)) {
