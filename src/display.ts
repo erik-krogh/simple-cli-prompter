@@ -1,6 +1,9 @@
 import stripAnsi from "strip-ansi";
 import { ansiAwareSlice, debounce } from "./utils.js";
 
+// used to keep track of the history of the terminal, up and down arrows can be used to navigate it
+const history: string[] = [];
+
 // how many lines down we've moved the cursor. Used to move back up before rendering.
 let linesDown: number = 0;
 
@@ -112,6 +115,7 @@ export function startDisplay(host: DisplayHost): Display {
   let input = "";
   let cursor = 0;
   let stopped = false;
+  let currentHistoryIndex = history.length; // 1 after the last element.
 
   const update = debounce(function () {
     if (stopped) {
@@ -165,6 +169,7 @@ export function startDisplay(host: DisplayHost): Display {
       return;
     }
     register.remove();
+    history.push(input);
     // it's the callers responsibility to print the result. We reset the display and clear the prompting UI.
     if (linesDown > 0) {
       // move up again
@@ -200,7 +205,28 @@ export function startDisplay(host: DisplayHost): Display {
 
     const oldInput = input;
 
-    ({ cursor, input } = handleKeyPress(char, cursor, input, done));
+    // up arrow, go back in history
+    if (char === "\u001b[A") {
+      if (currentHistoryIndex > 0) {
+        currentHistoryIndex--;
+        input = history[currentHistoryIndex];
+        cursor = input.length;
+      }
+    }
+    // down arrow, go forward in history
+    else if (char === "\u001b[B") {
+      if (currentHistoryIndex < history.length - 1) {
+        currentHistoryIndex++;
+        input = history[currentHistoryIndex];
+        cursor = input.length;
+      } else {
+        currentHistoryIndex = history.length;
+        input = "";
+        cursor = 0;
+      }
+    } else {
+      ({ cursor, input } = handleKeyPress(char, cursor, input, done));
+    }
 
     if (input !== oldInput && !stopped && host.inputChanged) {
       host.inputChanged(input);
