@@ -1,5 +1,4 @@
-// import * as prompt from "simple-cli-prompter";
-import * as prompt from "../../src/index.js";
+import * as prompt from "simple-cli-prompter";
 import * as tmp from "tmp";
 import * as cp from "child_process";
 import open from "open";
@@ -18,13 +17,8 @@ const popularRepos = [
   "github/codeql",
 ];
 
-(async function main() {
+void (async function main() {
   async function selectRepo(): Promise<[string, string]> {
-    await prompt.ask("Type something");
-    await prompt.ask("Type something");
-    await prompt.confirm("Confirm something");
-    await prompt.ask("Type something");
-    await prompt.ask("Type something");
     const usePossibleRepos = await prompt.confirm(
       "Select among some popular repositories?",
     );

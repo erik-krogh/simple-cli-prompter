@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20, 21]
+        node-version: [20, 21, 22]
     steps:
       - uses: actions/checkout@v3
 
@@ -34,3 +34,9 @@ jobs:
           git diff --exit-code
         env:
           CI: true
+
+      - name: Run checks in example app
+        run: |
+          npm install
+          npm run checks
+        working-directory: exampleApp
