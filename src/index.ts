@@ -21,6 +21,8 @@ function printEndText(text: string, answer: string) {
   );
 }
 
+const history: string[] = []; // history used for free-form text input
+
 /**
  * Prompts the user for a string, and if the `choices` parameter is provided, the user can only select one of the provided options.
  * The selected option is returned as a string.
@@ -35,12 +37,38 @@ export async function ask(
     throw new Error("No choices provided");
   }
   if (!choices) {
+    let currentHistoryIndex = history.length; // 1 more than the last index
     // free form text input
     const answer = await (currentDisplay = display.startDisplay({
       print: () => ({ prefix: text }),
+      handleKey: (key, display) => {
+        // up arrow
+        if (key === "\u001b[A") {
+          if (currentHistoryIndex > 0) {
+            currentHistoryIndex--;
+            display.setInput(history[currentHistoryIndex]);
+          }
+          return true;
+        }
+        // down arrow
+        else if (key === "\u001b[B") {
+          if (currentHistoryIndex < history.length) {
+            currentHistoryIndex++;
+            display.setInput(
+              currentHistoryIndex === history.length
+                ? ""
+                : history[currentHistoryIndex],
+            );
+          }
+          return true;
+        }
+        return false;
+      },
     })).promise;
 
     printEndText(text, answer);
+
+    history.push(answer);
 
     return answer;
   }

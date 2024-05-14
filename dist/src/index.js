@@ -11,6 +11,7 @@ function printEndText(text, answer) {
     // move up one line, clear the console, print "text" + selected, and show the cursor
     process.stdout.write("\x1B[1A\x1B[J" + text + " " + color.cyan(answer) + "\n\x1B[?25h");
 }
+const history = []; // history used for free-form text input
 /**
  * Prompts the user for a string, and if the `choices` parameter is provided, the user can only select one of the provided options.
  * The selected option is returned as a string.
@@ -22,11 +23,34 @@ export async function ask(text, choices) {
         throw new Error("No choices provided");
     }
     if (!choices) {
+        let currentHistoryIndex = history.length; // 1 more than the last index
         // free form text input
         const answer = await (currentDisplay = display.startDisplay({
             print: () => ({ prefix: text }),
+            handleKey: (key, display) => {
+                // up arrow
+                if (key === "\u001b[A") {
+                    if (currentHistoryIndex > 0) {
+                        currentHistoryIndex--;
+                        display.setInput(history[currentHistoryIndex]);
+                    }
+                    return true;
+                }
+                // down arrow
+                else if (key === "\u001b[B") {
+                    if (currentHistoryIndex < history.length) {
+                        currentHistoryIndex++;
+                        display.setInput(currentHistoryIndex === history.length
+                            ? ""
+                            : history[currentHistoryIndex]);
+                    }
+                    return true;
+                }
+                return false;
+            },
         })).promise;
         printEndText(text, answer);
+        history.push(answer);
         return answer;
     }
     let input = "";
