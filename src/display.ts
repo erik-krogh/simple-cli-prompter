@@ -61,8 +61,8 @@ function registerHandler(handler: (char: string) => void) {
 
     // Ctrl-C is very hardcoded, to make sure it always works
     if (key === "\u0003") {
-      process.stdout.write("\x1B[?25h"); // show the cursor
-      process.exit(0);
+      handleExit();
+      return;
     }
     // if ordinary keyboard char, extended ascii, special char, unicode, etc. handle one by one
     if (/^[\x20-\x7E\u00A0-\uFFFF]+$/.test(key)) {
@@ -261,7 +261,8 @@ function handleKeyPress(
 
   // ctrl + d, or zero-width-space and empty input, exit hard
   else if (char === "\u0004" && input === "") {
-    process.exit(1);
+    handleExit();
+    return { cursor, input };
   }
 
   // else, if ctrl + d, skip
@@ -298,6 +299,21 @@ function handleKeyPress(
     cursor += char.length;
   }
   return { cursor, input };
+}
+
+function handleExit() {
+  process.stdout.write("\x1B[?25h"); // show the cursor
+  if (process.stdin.isTTY) process.stdin.setRawMode(false);
+
+  // figure out of a SIGINT handler is installed
+  if (process.listeners("SIGINT").length === 0) {
+    process.exit(0);
+  }
+
+  // otherwise, run them. 
+  for (const listener of process.listeners("SIGINT")) {
+    listener("SIGINT");
+  }
 }
 
 function mkPromise<T>(): {
