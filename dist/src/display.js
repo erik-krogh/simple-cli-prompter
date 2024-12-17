@@ -241,7 +241,7 @@ function handleExit() {
     if (process.listeners("SIGINT").length === 0) {
         process.exit(0);
     }
-    // otherwise, run them. 
+    // otherwise, run them.
     for (const listener of process.listeners("SIGINT")) {
         listener("SIGINT");
     }
