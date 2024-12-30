@@ -67,8 +67,11 @@ export async function ask(text, choices) {
                     return true; // prevent default action, which is to close the display
                 }
             }
-            // up/down arrow, modify line number
-            else if (key === "\u001b[A" || key === "\u001b[B") {
+            // up/down arrow, modify line number. I have no idea why the 0A / 0B started happening, but it did... [A and [B are the normal up/down arrow keys, and what is documented.
+            else if (key === "\u001b[A" ||
+                key === "\u001b[B" ||
+                key === "\u001bOA" ||
+                key === "\u001bOB") {
                 ({ selectedLine, startOffset } = handleKeyUpDown(selectedLine, key, choices, input, startOffset));
                 return true;
             }
@@ -325,7 +328,7 @@ function handleNewInput(selectedLine, startOffset, choices, input) {
     return { selectedLine, startOffset };
 }
 function handleKeyUpDown(selectedLine, key, choices, input, startOffset) {
-    selectedLine += key === "\u001b[A" ? -1 : 1;
+    selectedLine += key.endsWith("A") ? -1 : 1;
     const NUM_ACTIVE_CHOICES = utils.filterAndSortChoices(choices, input).length;
     if (selectedLine < 0) {
         selectedLine = 0;
