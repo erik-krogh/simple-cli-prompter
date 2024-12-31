@@ -154,3 +154,22 @@ describe("highlighting", function () {
     expect(sorted).to.deep.equal([choice1, choice2]);
   });
 });
+
+describe("displayLength", () => {
+  it("should return the correct length", () => {
+    expect(utils.displayLength("abcd")).to.equal(4);
+    expect(utils.displayLength("图片")).to.equal(4);
+    expect(utils.displayLength("图c")).to.equal(3);
+  });
+
+  it("should slice", () => {
+    const longStr =
+      "microsoft/TypeScript 图片不能为空图片不能为空图片不能为空图片不能为空图片不能为空 fewaiubewb 图片不能为空图片不能为空图片不能为空图片不能为空图片不能为空 oub aigerwb 图片不能为空图片不能为空图片不能为空";
+    expect(utils.displayLength(longStr)).to.equal(202);
+
+    // we don't always end at 80, but we should be close (and never above )
+    const sliced = utils.ansiAwareSlice(longStr, 0, 80);
+    expect(utils.displayLength(sliced)).to.be.at.most(80);
+    expect(utils.displayLength(sliced)).to.be.greaterThan(78);
+  });
+});
