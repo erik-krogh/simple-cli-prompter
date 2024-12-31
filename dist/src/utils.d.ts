@@ -26,3 +26,5 @@ export declare function ansiAwareSlice(str: string, start: number, end: number):
  * Calls that are more than `ms` milliseconds apart will result in multiple calls.
  */
 export declare function debounce(fn: () => void, ms: number): () => void;
+/** Calculates the displayed length (in columns) of a string, accounting for ANSI codes and wide characters. */
+export declare function displayLength(str: string): number;

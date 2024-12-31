@@ -1,5 +1,5 @@
 import stripAnsi from "strip-ansi";
-import { ansiAwareSlice, debounce } from "./utils.js";
+import { ansiAwareSlice, debounce, displayLength } from "./utils.js";
 // how many lines down we've moved the cursor. Used to move back up before rendering.
 let linesDown = 0;
 function render(lines, cursor = 0) {
@@ -96,19 +96,19 @@ export function startDisplay(host) {
         // If the line is still too long, we split it across multiple lines (ansi code aware).
         let firstLine;
         const maxLength = process.stdout.columns || 80;
-        if (stripAnsi(printed.prefix + input).length > maxLength) {
+        if (displayLength(printed.prefix + input) > maxLength) {
             firstLine = printed.prefix + input;
         }
         else {
             firstLine = ansiAwareSlice(printed.prefix + input + (printed.suffix ?? ""), 0, maxLength);
         }
         const firstLines = [];
-        if (stripAnsi(firstLine).length < maxLength) {
+        if (displayLength(firstLine) < maxLength) {
             firstLines.push(firstLine);
         }
         else {
             // split into multiple lines
-            const numLines = Math.ceil(stripAnsi(firstLine).length / maxLength);
+            const numLines = Math.ceil(displayLength(firstLine) / maxLength);
             for (let i = 0; i < numLines; i++) {
                 firstLines.push(ansiAwareSlice(firstLine, i * maxLength, (i + 1) * maxLength));
             }
