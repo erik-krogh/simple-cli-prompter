@@ -1,5 +1,6 @@
 import type { StringOrChoice } from "./index.js";
 import stripAnsi from "strip-ansi";
+import wcwidth from "wcwidth";
 import color from "ansi-colors";
 
 export function renderChoice(
@@ -309,7 +310,7 @@ export function ansiAwareSlice(str: string, start: number, end: number) {
   let inEscape = false;
   let escape = "";
   let out = "";
-  let visible = 0;
+  let visibleCols = 0;
   let escapeSequences = ""; // To store all escape sequences encountered
 
   for (let i = 0; i < str.length; i++) {
@@ -326,10 +327,17 @@ export function ansiAwareSlice(str: string, start: number, end: number) {
         escape = "";
       }
     } else {
-      if (visible >= start && visible < end) {
-        out += char;
+      const w = wcwidth(char) || 1;
+      const nextVisible = visibleCols + w;
+      if (nextVisible <= start) {
+        visibleCols = nextVisible;
+        continue;
       }
-      visible++;
+      if (visibleCols >= end || nextVisible > end) {
+        continue; // don't break here, because ansi escape sequences should still be processed
+      }
+      out += char;
+      visibleCols = nextVisible;
     }
   }
 
@@ -355,4 +363,9 @@ export function debounce(fn: () => void, ms: number): () => void {
       fn();
     }, ms);
   };
+}
+
+/** Calculates the displayed length (in columns) of a string, accounting for ANSI codes and wide characters. */
+export function displayLength(str: string) {
+  return wcwidth(stripAnsi(str));
 }
