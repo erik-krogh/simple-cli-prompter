@@ -29,7 +29,7 @@ export async function ask(text, choices) {
             print: () => ({ prefix: text }),
             handleKey: (key, display) => {
                 // up arrow
-                if (isArrowKey(key) === "up") {
+                if (getArrowKeyName(key) === "up") {
                     if (currentHistoryIndex > 0) {
                         currentHistoryIndex--;
                         display.setInput(history[currentHistoryIndex]);
@@ -37,7 +37,7 @@ export async function ask(text, choices) {
                     return true;
                 }
                 // down arrow
-                else if (isArrowKey(key) === "down") {
+                else if (getArrowKeyName(key) === "down") {
                     if (currentHistoryIndex < history.length) {
                         currentHistoryIndex++;
                         display.setInput(currentHistoryIndex === history.length
@@ -68,7 +68,7 @@ export async function ask(text, choices) {
                 }
             }
             // up/down arrow, modify line number.
-            else if (isArrowKey(key)) {
+            else if (getArrowKeyName(key)) {
                 ({ selectedLine, startOffset } = handleKeyUpDown(selectedLine, key, choices, input, startOffset));
                 return true;
             }
@@ -87,7 +87,8 @@ export async function ask(text, choices) {
     printEndText(text, shownResult);
     return typeof selected === "string" ? selected : selected.name;
 }
-function isArrowKey(key) {
+/** Gets the up/down arrow name for the given key, if it is an up/down arrow key. */
+function getArrowKeyName(key) {
     // I have no idea why the 0A / 0B started happening, but it did... [A and [B are the normal up/down arrow keys, and what is documented.
     // Seems my terminal went into "application mode". I don't know why, but now its handled.
     if (key === "\u001b[A" || key === "\u001bOA") {
@@ -257,7 +258,7 @@ export async function multiple(text, choices, requiredAtLeastOne = true) {
                 }
             }
             // up/down arrow, modify line number
-            else if (isArrowKey(key)) {
+            else if (getArrowKeyName(key)) {
                 ({ selectedLine, startOffset } = handleKeyUpDown(selectedLine, key, choices, input, startOffset));
                 return true;
             }
@@ -335,7 +336,7 @@ function handleNewInput(selectedLine, startOffset, choices, input) {
     return { selectedLine, startOffset };
 }
 function handleKeyUpDown(selectedLine, key, choices, input, startOffset) {
-    selectedLine += isArrowKey(key) === "up" ? -1 : 1;
+    selectedLine += getArrowKeyName(key) === "up" ? -1 : 1;
     const NUM_ACTIVE_CHOICES = utils.filterAndSortChoices(choices, input).length;
     if (selectedLine < 0) {
         selectedLine = 0;
