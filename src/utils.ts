@@ -1,7 +1,11 @@
-import type { StringOrChoice } from "./index.js";
-import stripAnsi from "strip-ansi";
-import wcwidth from "wcwidth";
+import type { ChildProcess } from "child_process";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import color from "ansi-colors";
+import stripAnsi from "strip-ansi";
+import type { StringOrChoice } from "./index.js";
+import wcwidth from "wcwidth";
 
 export function renderChoice(
   choice: StringOrChoice,
@@ -182,10 +186,6 @@ export function highlightSubsequence(message: string, typed: string): string {
   return result;
 }
 
-import * as path from "path";
-import * as os from "os";
-import * as fs from "fs";
-
 export function expandHomeDir(p: string): string {
   if (p[0] === "~") {
     return path.join(os.homedir(), p.slice(1));
@@ -272,8 +272,6 @@ export function makeFileCompletions(
     return [];
   }
 }
-
-import type { ChildProcess } from "child_process";
 
 /**
  * Waits for the given process to terminate, and returns its stdout.
