@@ -1,6 +1,9 @@
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import color from "ansi-colors";
 import stripAnsi from "strip-ansi";
 import wcwidth from "wcwidth";
-import color from "ansi-colors";
 export function renderChoice(choice, selected = false, input, arrowSelected = true) {
     let text;
     let hintStart = -1;
@@ -146,9 +149,6 @@ export function highlightSubsequence(message, typed) {
     result += suffix;
     return result;
 }
-import * as path from "path";
-import * as os from "os";
-import * as fs from "fs";
 export function expandHomeDir(p) {
     if (p[0] === "~") {
         return path.join(os.homedir(), p.slice(1));

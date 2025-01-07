@@ -1,4 +1,5 @@
 /// <reference types="node" />
+import type { ChildProcess } from "child_process";
 import type { StringOrChoice } from "./index.js";
 export declare function renderChoice(choice: StringOrChoice, selected?: boolean, input?: string, arrowSelected?: boolean): string;
 /**
@@ -9,7 +10,6 @@ export declare function filterAndSortChoices(choices: StringOrChoice[], input: s
 export declare function highlightSubsequence(message: string, typed: string): string;
 export declare function expandHomeDir(p: string): string;
 export declare function makeFileCompletions(input: string, ext?: string, cwd?: string): string[];
-import type { ChildProcess } from "child_process";
 /**
  * Waits for the given process to terminate, and returns its stdout.
  * On crash or non-zero exit code, throws an error with the given message.
