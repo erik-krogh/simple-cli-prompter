@@ -43,7 +43,7 @@ export async function ask(
       print: () => ({ prefix: text }),
       handleKey: (key, display) => {
         // up arrow
-        if (key === "\u001b[A") {
+        if (isArrowKey(key) === "up") {
           if (currentHistoryIndex > 0) {
             currentHistoryIndex--;
             display.setInput(history[currentHistoryIndex]);
@@ -51,7 +51,7 @@ export async function ask(
           return true;
         }
         // down arrow
-        else if (key === "\u001b[B") {
+        else if (isArrowKey(key) === "down") {
           if (currentHistoryIndex < history.length) {
             currentHistoryIndex++;
             display.setInput(
@@ -89,13 +89,8 @@ export async function ask(
           return true; // prevent default action, which is to close the display
         }
       }
-      // up/down arrow, modify line number. I have no idea why the 0A / 0B started happening, but it did... [A and [B are the normal up/down arrow keys, and what is documented.
-      else if (
-        key === "\u001b[A" ||
-        key === "\u001b[B" ||
-        key === "\u001bOA" ||
-        key === "\u001bOB"
-      ) {
+      // up/down arrow, modify line number.
+      else if (isArrowKey(key)) {
         ({ selectedLine, startOffset } = handleKeyUpDown(
           selectedLine,
           key,
@@ -130,6 +125,17 @@ export async function ask(
   printEndText(text, shownResult);
 
   return typeof selected === "string" ? selected : selected.name;
+}
+
+function isArrowKey(key: string): undefined | "up" | "down" {
+  // I have no idea why the 0A / 0B started happening, but it did... [A and [B are the normal up/down arrow keys, and what is documented.
+  // Seems my terminal went into "application mode". I don't know why, but now its handled.
+  if (key === "\u001b[A" || key === "\u001bOA") {
+    return "up";
+  }
+  if (key === "\u001b[B" || key === "\u001bOB") {
+    return "down";
+  }
 }
 
 /** Prompts the user for a boolean value, and if the `secondsTimeout` parameter is provided the default choice is used after the timeout has passed. */
@@ -335,7 +341,7 @@ export async function multiple(
         }
       }
       // up/down arrow, modify line number
-      else if (key === "\u001b[A" || key === "\u001b[B") {
+      else if (isArrowKey(key)) {
         ({ selectedLine, startOffset } = handleKeyUpDown(
           selectedLine,
           key,
@@ -452,7 +458,7 @@ function handleKeyUpDown(
   input: string,
   startOffset: number,
 ) {
-  selectedLine += key.endsWith("A") ? -1 : 1;
+  selectedLine += isArrowKey(key) === "up" ? -1 : 1;
   const NUM_ACTIVE_CHOICES = utils.filterAndSortChoices(choices, input).length;
   if (selectedLine < 0) {
     selectedLine = 0;
