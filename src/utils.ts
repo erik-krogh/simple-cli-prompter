@@ -304,7 +304,7 @@ export function waitForProcess(
  * Ansi aware version of `str.slice(start, end)`.
  * Returns a string where the ansi-striped length is between `start` and `end`, while making sure to not cut off any ansi escape sequences and properly ending all ansi codes.
  */
-export function ansiAwareSlice(str: string, start: number, end: number) {
+export function ansiAwareSlice(str: string, start: number, end: number = Infinity) {
   let inEscape = false;
   let escape = "";
   let out = "";

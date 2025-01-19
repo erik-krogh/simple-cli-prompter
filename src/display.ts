@@ -148,7 +148,7 @@ export function startDisplay(host: DisplayHost): Display {
 
     render(
       [...firstLines, ...(printed.lines ?? [])],
-      cursor + stripAnsi(printed.prefix).length,
+      cursor + displayLength(printed.prefix),
     );
   }, 10);
 
@@ -182,7 +182,7 @@ export function startDisplay(host: DisplayHost): Display {
     update,
     setInput: (newInput: string) => {
       input = newInput;
-      cursor = input.length;
+      cursor = displayLength(input);
       host.inputChanged?.(input);
       update();
     },
@@ -224,18 +224,18 @@ function handleKeyPress(
 
   // right arrow, cursor right
   else if (char === "\u001b[C") {
-    cursor = Math.min(input.length, cursor + 1);
+    cursor = Math.min(displayLength(input), cursor + 1);
   }
 
   // backspace, remove char at cursor
   else if (char === "\u007f" || char === "\b") {
-    input = input.slice(0, cursor - 1) + input.slice(cursor);
+    input = ansiAwareSlice(input, 0, cursor - 1) + ansiAwareSlice(input, cursor);
     cursor = Math.max(0, cursor - 1);
   }
 
   // delete, remove char after cursor
   else if (char === "\u001b[3~") {
-    input = input.slice(0, cursor) + input.slice(cursor + 1);
+    input = ansiAwareSlice(input, 0, cursor) + ansiAwareSlice(input, cursor + 1);
   }
 
   // ctrl + a, move cursor to start
@@ -245,7 +245,7 @@ function handleKeyPress(
 
   // ctrl + e, move cursor to end
   else if (char === "\u0005") {
-    cursor = input.length;
+    cursor = displayLength(input);
   }
 
   // ctrl + u, delete entire line
@@ -256,7 +256,7 @@ function handleKeyPress(
 
   // ctrl + k, delete from cursor to end
   else if (char === "\u000b") {
-    input = input.slice(0, cursor);
+    input = ansiAwareSlice(input, 0, cursor);
   }
 
   // ctrl + d, or zero-width-space and empty input, exit hard
@@ -272,14 +272,15 @@ function handleKeyPress(
 
   // option + right arrow or ctrl + right arrow, move cursor to end of word, or end of string if no match
   else if (char === "\u001b\u001b[C" || char === "\u001b[1;5C") {
-    const match = input.slice(cursor).match(/\s/);
-    cursor += match && match.index ? match.index + 1 : input.length - cursor;
+    const searchString = ansiAwareSlice(input, cursor);
+    const match = searchString.match(/\s/);
+    cursor += match && match.index ? displayLength(searchString.slice(0, match.index)) + 1 : displayLength(input) - cursor;
   }
 
   // option + left arrow or ctrl + left arrow, move cursor to start of word
   else if (char === "\u001b\u001b[D" || char === "\u001b[1;5D") {
-    const match = input.slice(0, cursor).match(/\S+\s*$/);
-    cursor = match ? cursor - match[0].length : 0;
+    const match = ansiAwareSlice(input, 0, cursor).match(/\S+\s*$/);
+    cursor = match ? cursor - displayLength(match[0]) : 0;
   }
 
   // if unknown escape sequence, ignore
@@ -295,8 +296,8 @@ function handleKeyPress(
 
   // plain ascii chars, add to input (at cursor position)
   else {
-    input = input.slice(0, cursor) + char + input.slice(cursor);
-    cursor += char.length;
+    input = ansiAwareSlice(input, 0, cursor) + char + ansiAwareSlice(input, cursor);
+    cursor += displayLength(char);
   }
   return { cursor, input };
 }
