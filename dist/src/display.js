@@ -129,8 +129,11 @@ export function startDisplay(host) {
             process.stdout.write("\x1B[" + linesDown + "A");
         }
         process.stdout.write("\x1B[1000C\x1B[J\n"); // move to the end of the line, clear the screen, and start a new line
-        if (process.stdin.isTTY)
+        if (process.stdin.isTTY) {
             process.stdin.setRawMode(false);
+            // Explicitly unrefing, such that the process can exit if this was the only thing keeping it alive.
+            process.stdin.unref();
+        }
         stopped = true;
         resolve(result);
     };
@@ -146,8 +149,10 @@ export function startDisplay(host) {
         },
         isStopped: () => stopped,
     };
-    if (process.stdin.isTTY)
+    if (process.stdin.isTTY) {
+        process.stdin.ref(); // Making explicitly sure that stdin keeps the event loop alive
         process.stdin.setRawMode(true);
+    }
     process.stdin.setEncoding("utf8");
     function handler(char) {
         if (host.handleKey && host.handleKey(char, display)) {
@@ -173,12 +178,14 @@ function handleKeyPress(char, cursor, input, done) {
     }
     // backspace, remove char at cursor
     else if (char === "\u007f" || char === "\b") {
-        input = ansiAwareSlice(input, 0, cursor - 1) + ansiAwareSlice(input, cursor);
+        input =
+            ansiAwareSlice(input, 0, cursor - 1) + ansiAwareSlice(input, cursor);
         cursor = Math.max(0, cursor - 1);
     }
     // delete, remove char after cursor
     else if (char === "\u001b[3~") {
-        input = ansiAwareSlice(input, 0, cursor) + ansiAwareSlice(input, cursor + 1);
+        input =
+            ansiAwareSlice(input, 0, cursor) + ansiAwareSlice(input, cursor + 1);
     }
     // ctrl + a, move cursor to start
     else if (char === "\u0001") {
@@ -210,7 +217,10 @@ function handleKeyPress(char, cursor, input, done) {
     else if (char === "\u001b\u001b[C" || char === "\u001b[1;5C") {
         const searchString = ansiAwareSlice(input, cursor);
         const match = searchString.match(/\s/);
-        cursor += match && match.index ? displayLength(searchString.slice(0, match.index)) + 1 : displayLength(input) - cursor;
+        cursor +=
+            match && match.index
+                ? displayLength(searchString.slice(0, match.index)) + 1
+                : displayLength(input) - cursor;
     }
     // option + left arrow or ctrl + left arrow, move cursor to start of word
     else if (char === "\u001b\u001b[D" || char === "\u001b[1;5D") {
@@ -228,7 +238,8 @@ function handleKeyPress(char, cursor, input, done) {
     }
     // plain ascii chars, add to input (at cursor position)
     else {
-        input = ansiAwareSlice(input, 0, cursor) + char + ansiAwareSlice(input, cursor);
+        input =
+            ansiAwareSlice(input, 0, cursor) + char + ansiAwareSlice(input, cursor);
         cursor += displayLength(char);
     }
     return { cursor, input };
