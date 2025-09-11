@@ -235,13 +235,15 @@ function handleKeyPress(
 
   // backspace, remove char at cursor
   else if (char === "\u007f" || char === "\b") {
-    input = ansiAwareSlice(input, 0, cursor - 1) + ansiAwareSlice(input, cursor);
+    input =
+      ansiAwareSlice(input, 0, cursor - 1) + ansiAwareSlice(input, cursor);
     cursor = Math.max(0, cursor - 1);
   }
 
   // delete, remove char after cursor
   else if (char === "\u001b[3~") {
-    input = ansiAwareSlice(input, 0, cursor) + ansiAwareSlice(input, cursor + 1);
+    input =
+      ansiAwareSlice(input, 0, cursor) + ansiAwareSlice(input, cursor + 1);
   }
 
   // ctrl + a, move cursor to start
@@ -280,7 +282,10 @@ function handleKeyPress(
   else if (char === "\u001b\u001b[C" || char === "\u001b[1;5C") {
     const searchString = ansiAwareSlice(input, cursor);
     const match = searchString.match(/\s/);
-    cursor += match && match.index ? displayLength(searchString.slice(0, match.index)) + 1 : displayLength(input) - cursor;
+    cursor +=
+      match && match.index
+        ? displayLength(searchString.slice(0, match.index)) + 1
+        : displayLength(input) - cursor;
   }
 
   // option + left arrow or ctrl + left arrow, move cursor to start of word
@@ -302,7 +307,8 @@ function handleKeyPress(
 
   // plain ascii chars, add to input (at cursor position)
   else {
-    input = ansiAwareSlice(input, 0, cursor) + char + ansiAwareSlice(input, cursor);
+    input =
+      ansiAwareSlice(input, 0, cursor) + char + ansiAwareSlice(input, cursor);
     cursor += displayLength(char);
   }
   return { cursor, input };
