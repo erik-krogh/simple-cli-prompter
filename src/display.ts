@@ -1,4 +1,3 @@
-import stripAnsi from "strip-ansi";
 import { ansiAwareSlice, debounce, displayLength } from "./utils.js";
 
 // how many lines down we've moved the cursor. Used to move back up before rendering.
@@ -171,7 +170,11 @@ export function startDisplay(host: DisplayHost): Display {
       process.stdout.write("\x1B[" + linesDown + "A");
     }
     process.stdout.write("\x1B[1000C\x1B[J\n"); // move to the end of the line, clear the screen, and start a new line
-    if (process.stdin.isTTY) process.stdin.setRawMode(false);
+    if (process.stdin.isTTY) {
+      process.stdin.setRawMode(false);
+      // Explicitly unrefing, such that the process can exit if this was the only thing keeping it alive.
+      process.stdin.unref();
+    }
     stopped = true;
     resolve(result);
   };
@@ -189,7 +192,10 @@ export function startDisplay(host: DisplayHost): Display {
     isStopped: () => stopped,
   } satisfies Display;
 
-  if (process.stdin.isTTY) process.stdin.setRawMode(true);
+  if (process.stdin.isTTY) {
+    process.stdin.ref(); // Making explicitly sure that stdin keeps the event loop alive
+    process.stdin.setRawMode(true);
+  }
   process.stdin.setEncoding("utf8");
 
   function handler(char: string) {
